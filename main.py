@@ -5,14 +5,30 @@ from fastapi import FastAPI
 from src.task.router import router as task_router 
 from src.user.router import router as user_router
 from contextlib import asynccontextmanager
+from src.utils.logging import log_requests
+from fastapi.middleware.cors import CORSMiddleware
+from src.utils.arq_functions import REDIS_SETTINGS
+from arq.connections import create_pool
+
 
 # No need to create the tables at startup as alembic took the job of managing the db
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     Base.metadata.create_all(bind=engine)
-#     yield
-app = FastAPI(title="Task Manager API", description="API for managing tasks", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.redis_pool = await create_pool(REDIS_SETTINGS)
+    yield
+    await app.state.redis_pool.aclose()
 
+app = FastAPI(lifespan=lifespan,title="Task Manager API", description="API for managing tasks", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5500"],   # match your actual demo page's origin exactly
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.middleware("http")(log_requests)
 app.include_router(task_router)
 app.include_router(user_router)
+
 

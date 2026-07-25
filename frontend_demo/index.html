@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CORS demo — deliberately ugly, on purpose</title>
+</head>
+<body>
+  <h1>CORS demo page</h1>
+  <p>
+    This page is being served from a DIFFERENT origin than your API.
+    Open DevTools (F12) &rarr; Console tab AND Network tab before clicking the button.
+  </p>
+  <p>
+    API_URL is currently: <code id="api-url"></code>
+  </p>
+
+  <button onclick="testLogin()">Test POST /users/login</button>
+
+  <h3>Result:</h3>
+  <pre id="result" style="background:#eee; padding:1em; white-space:pre-wrap;"></pre>
+
+  <script>
+    const API_URL = "http://localhost:8000";
+    document.getElementById("api-url").textContent = API_URL;
+
+    async function testLogin() {
+      const resultEl = document.getElementById("result");
+      resultEl.textContent = "Sending request...";
+      console.log("About to fetch " + API_URL + "/users/login from origin " + window.location.origin);
+
+      try {
+        const response = await fetch(API_URL + "/users/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "nobody@example.com", password: "wrongpassword" }),
+        });
+        console.log("fetch() resolved. status:", response.status);
+        const body = await response.json();
+        resultEl.textContent =
+          "SUCCESS — JS was able to read the response.\n\n" +
+          "HTTP status: " + response.status + "\n" +
+          "Body: " + JSON.stringify(body, null, 2) +
+          "\n\n(A 401 here is EXPECTED — the credentials are fake on purpose. " +
+          "The point isn't whether login succeeds, it's whether this text appeared at all.)";
+      } catch (err) {
+        console.error("fetch() failed:", err);
+        resultEl.textContent =
+          "BLOCKED — fetch() itself threw an error, meaning the browser never let JS " +
+          "see the response at all (or never sent the real request past the preflight).\n\n" +
+          "Error: " + err +
+          "\n\nCheck the Console tab above this — that's where the actual CORS error message lives.";
+      }
+    }
+  </script>
+</body>
+</html>

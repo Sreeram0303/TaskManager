@@ -1,4 +1,4 @@
-from fastapi import Depends,HTTPException
+from fastapi import Depends,HTTPException,Cookie,Header
 from fastapi.security import HTTPBearer,HTTPAuthorizationCredentials
 import jwt
 from src.utils.db import get_db
@@ -6,12 +6,16 @@ from sqlalchemy.orm import Session
 from src.utils.settings import settings
 from src.user.models import User
 from src.utils.security import decode_token
-
+from typing import Annotated
+import secrets
 bearer_scheme = HTTPBearer()
 
+BearerCredentials = Annotated[HTTPAuthorizationCredentials,Depends(bearer_scheme)]
+DbSession = Annotated[Session,Depends(get_db)]
+
 def get_current_user(
-    credentials:HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db:Session = Depends(get_db)
+    credentials:BearerCredentials,
+    db:DbSession
 ):
     token = credentials.credentials
     try:
@@ -42,3 +46,12 @@ def get_current_user(
         raise HTTPException(status_code=403,detail="User account is inactive")
 
     return user
+
+CurrentUser = Annotated[User,Depends(get_current_user)]
+
+def verify_csrf(
+    csrf_token: Annotated[str | None, Cookie()] = None,
+    X_CSRF_Token: Annotated[str | None, Header()] = None,
+):
+    if not csrf_token or not X_CSRF_Token or not secrets.compare_digest(csrf_token,X_CSRF_Token):
+        raise HTTPException(status_code=403, detail="CSRF token missing or invalid")

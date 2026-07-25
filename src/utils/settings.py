@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     JWT_ACCESS_EXPIRE_MINUTES :int = 30
     JWT_REFRESH_EXPIRE_DAYS : int = 7 
     
+    REDIS_URL: str 
+    RESEND_API_KEY : str 
+    
     
 settings = Settings()
 
