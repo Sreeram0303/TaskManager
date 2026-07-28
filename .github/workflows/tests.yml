@@ -20,7 +20,7 @@ jobs:
       POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: taskmanager_test
       DB_CONNECTION: postgresql://taskmanager_user:testpassword@localhost:5432/taskmanager_test
-      JWT_SECRET_KEY: ci-test-secret-not-a-real-key
+      JWT_SECRET_KEY: 2e3ee91954411c3cf2ac6e418bb4fbab1467a56c9e0bac1666821a5d623a44d0
       REDIS_URL: redis://localhost:6379
       RESEND_API_KEY: ci-placeholder-key
 
