@@ -10,6 +10,14 @@ services:
       - "5432:5432"
     volumes:
       - taskmanager_postgres_data:/var/lib/postgresql/data
+    # Same problem as CI: Postgres takes a moment to actually be ready to
+    # accept connections after the container starts. Without this, app/worker
+    # could start and try to connect before Postgres is truly listening.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -18,6 +26,48 @@ services:
       - "6379:6379"
     volumes:
       - taskmanager_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    image: taskmanager-app
+    container_name: taskmanager-app
+    ports:
+      - "8000:8000"
+    environment:
+      # service names, not localhost — postgres/redis are separate
+      # containers, only reachable by their Compose service name on the
+      # shared network Compose creates automatically.
+      DB_CONNECTION: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    # Same image as `app` (built once, tagged taskmanager-app) — no separate
+    # build step here, just a different startup command.
+    image: taskmanager-app
+    container_name: taskmanager-worker
+    command: arq src.utils.arq_functions.WorkerSettings
+    environment:
+      DB_CONNECTION: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   taskmanager_postgres_data:

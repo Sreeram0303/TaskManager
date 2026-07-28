@@ -1,0 +1,8 @@
+taskmanagerenv/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+.env
+tasks.db
+tests/
