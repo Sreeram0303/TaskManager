@@ -1,0 +1,76 @@
+name: Tests
+
+# WHEN this runs — every push to main, and every pull request targeting main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Service containers: GitHub spins these up FRESH for this job only,
+    # alongside the runner, and tears them down when the job finishes.
+    # Same idea as docker-compose.yml, just orchestrated by GitHub instead
+    # of your own machine.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: taskmanager_user
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: taskmanager_test
+        ports:
+          - 5432:5432
+        # Postgres takes a moment to actually be ready to accept connections
+        # after the container starts — this makes the runner WAIT for a real
+        # health check to pass before moving on, instead of racing it.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Alembic migrations against the CI database
+        env:
+          DB_CONNECTION: postgresql://taskmanager_user:testpassword@localhost:5432/taskmanager_test
+        run: alembic upgrade head
+
+      - name: Run tests
+        env:
+          # No .env file exists in CI (correctly — it's gitignored) — every
+          # value Settings() needs has to come from real environment
+          # variables instead. conftest.py builds its own DB_CONNECTION
+          # from POSTGRES_USER/PASSWORD, same as it does locally.
+          POSTGRES_USER: taskmanager_user
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: taskmanager_test
+          DB_CONNECTION: postgresql://taskmanager_user:testpassword@localhost:5432/taskmanager_test
+          JWT_SECRET_KEY: ci-test-secret-not-a-real-key
+          REDIS_URL: redis://localhost:6379
+          RESEND_API_KEY: ci-placeholder-key
+        run: pytest -v

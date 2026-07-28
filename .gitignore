@@ -3,3 +3,4 @@ taskmanagerenv/
 __pycache__/
 *.pyc
 tasks.db
+.pytest_cache/
