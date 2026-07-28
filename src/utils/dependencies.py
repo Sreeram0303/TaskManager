@@ -2,7 +2,7 @@ from fastapi import Depends,HTTPException,Cookie,Header
 from fastapi.security import HTTPBearer,HTTPAuthorizationCredentials
 import jwt
 from src.utils.db import get_db
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession 
 from src.utils.settings import settings
 from src.user.models import User
 from src.utils.security import decode_token
@@ -11,9 +11,9 @@ import secrets
 bearer_scheme = HTTPBearer()
 
 BearerCredentials = Annotated[HTTPAuthorizationCredentials,Depends(bearer_scheme)]
-DbSession = Annotated[Session,Depends(get_db)]
+DbSession = Annotated[AsyncSession,Depends(get_db)]
 
-def get_current_user(
+async def get_current_user(
     credentials:BearerCredentials,
     db:DbSession
 ):
@@ -35,7 +35,7 @@ def get_current_user(
         raise HTTPException(status_code=401,detail="Could not validate credentials")
 
     try:
-        user = db.get(User,int(user_id))
+        user = await db.get(User,int(user_id))
     except (TypeError, ValueError):
         raise HTTPException(status_code=401,detail="Could not validate credentials")
 

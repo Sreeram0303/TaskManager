@@ -1,12 +1,11 @@
 from datetime import  timezone
-from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.types import DateTime, TypeDecorator
 from src.utils.settings import settings
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker,AsyncSession
 
-
-engine = create_engine(url=settings.DB_CONNECTION)  # connection to DB
-LocalSession = sessionmaker(bind = engine) # session creatoor. session - task , unit work
+engine = create_async_engine(url=settings.DB_CONNECTION.replace("postgresql://","postgresql+asyncpg://"))  # connection to DB
+LocalSession = async_sessionmaker(bind = engine,expire_on_commit=False) # session creatoor. session - task , unit work
 
 class Base(DeclarativeBase):
     pass # registery for tables
@@ -40,7 +39,7 @@ class UTCDateTime(TypeDecorator):
         return value
 
 
-def get_db():
+async def get_db():
     session = LocalSession()
     try:
         yield session
@@ -49,7 +48,7 @@ def get_db():
         # session must not be left holding a half-done transaction —
         # roll it back before closing, else the next use of this
         # connection can inherit stale/uncommitted state.
-        session.rollback()
+        await session.rollback()
         raise
     finally:
-        session.close()
+        await session.close()

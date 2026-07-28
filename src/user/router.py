@@ -1,26 +1,25 @@
 import secrets
-import anyio
 from src.user import controller
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.db import get_db
 from src.utils.dependencies import verify_csrf
 from src.utils.settings import settings
 from typing import Annotated
-from fastapi import APIRouter, Depends,status, Request,Response, Cookie,Header,HTTPException
+from fastapi import APIRouter, Depends,status, Request,Response, Cookie,HTTPException
 from src.user.dtos import UserSchema, UserResponseSchema, LoginSchema,TokenSchema
 
 router = APIRouter(prefix="/users",tags=["Users"])
 
 @router.post("/register",response_model=UserResponseSchema,responses={409: {"description": "Username or email already registered"}},status_code=status.HTTP_201_CREATED)
-def register(body:UserSchema,request:Request,db:Session = Depends(get_db)):
+async def register(body:UserSchema,request:Request,db:AsyncSession = Depends(get_db)):
     pool = request.app.state.redis_pool
-    new_user = controller.register(body,db)
-    anyio.from_thread.run(pool.enqueue_job,"send_welcome_email",body.email)
+    new_user = await controller.register(body,db)
+    await pool.enqueue_job("send_welcome_email",body.email)
     return new_user
 
 @router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenSchema,responses={401:{"description":"Invalid Credentials"}})
-def login(body:LoginSchema,response:Response,db:Session = Depends(get_db)):
-    token_payload = controller.login(body,db)
+async def login(body:LoginSchema,response:Response,db:AsyncSession = Depends(get_db)):
+    token_payload = await controller.login(body,db)
     response.set_cookie(value=token_payload["refresh_token"],
                         key="refresh_token",
                         httponly=True,
@@ -48,11 +47,11 @@ def login(body:LoginSchema,response:Response,db:Session = Depends(get_db)):
     responses={401: {"description": "Invalid or expired refresh token"},
                403 : {"description" : "CSRF Mismatch"}}
 )
-def refresh(response:Response,db:Annotated[Session,Depends(get_db)],
+async def refresh(response:Response,db:Annotated[AsyncSession,Depends(get_db)],
             refresh_token : Annotated[str|None,Cookie()] = None):
     if(not refresh_token ):
         raise HTTPException(status_code=401)
-    token_payload = controller.refresh_access_token(refresh_token, db)
+    token_payload = await controller.refresh_access_token(refresh_token, db)
     response.set_cookie(value=token_payload["refresh_token"],
                         key="refresh_token",
                         httponly=True,
@@ -73,9 +72,9 @@ def refresh(response:Response,db:Annotated[Session,Depends(get_db)],
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK,dependencies=[Depends(verify_csrf)])
-def logout(response:Response,refresh_token:Annotated[str|None,Cookie()]=None, db: Session = Depends(get_db)):
+async def logout(response:Response,refresh_token:Annotated[str|None,Cookie()]=None, db: AsyncSession = Depends(get_db)):
     if(not refresh_token):
         raise HTTPException(status_code=401)
-    payload = controller.logout(refresh_token, db)
+    payload = await controller.logout(refresh_token, db)
     response.delete_cookie(key="refresh_token",path="/users")
     return payload
