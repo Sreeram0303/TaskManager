@@ -7,9 +7,13 @@ from src.utils.settings import settings
 from typing import Annotated
 from fastapi import APIRouter, Depends,status, Request,Response, Cookie,HTTPException
 from src.user.dtos import UserSchema, UserResponseSchema, LoginSchema,TokenSchema
-from src.utils.dependencies import rate_limit_ip, check_rate_limit
+from src.utils.dependencies import rate_limit_ip, check_rate_limit, CurrentUser
 from arq.connections import ArqRedis
 router = APIRouter(prefix="/users",tags=["Users"])
+
+@router.get("/me",response_model=UserResponseSchema,status_code=status.HTTP_200_OK)
+async def get_me(current_user:CurrentUser):
+    return current_user
 
 @router.post("/register",response_model=UserResponseSchema,responses={409: {"description": "Username or email already registered"}},status_code=status.HTTP_201_CREATED,dependencies=[Depends(rate_limit_ip("register_attempts"))])
 async def register(body:UserSchema,request:Request,db:AsyncSession = Depends(get_db)):

@@ -19,9 +19,10 @@ async def create_task(body: TaskSchema, background_tasks: BackgroundTasks,
 
 @router.get("",response_model=TaskListResponseSchema,responses={404:{"description":"Task not found"}},status_code=status.HTTP_200_OK)
 async def get_all_tasks(request:Request,db:DbSession,current_user:CurrentUser,
-                page:int = Query(1,ge=1),page_size:int = Query(20,ge=1,le=100)):
+                page:int = Query(1,ge=1),page_size:int = Query(20,ge=1,le=100),
+                is_completed:bool|None = None,search:str|None = None):
     redis_pool = request.app.state.redis_pool
-    return await controller.get_tasks(db,current_user.id,redis_pool,page,page_size)
+    return await controller.get_tasks(db,current_user.id,redis_pool,page,page_size,is_completed,search)
 
 @router.get("/{task_id}",response_model=TaskResponseSchema,responses={404:{"description":"Task not found"}},status_code=status.HTTP_200_OK)
 async def get_task(task_id:int,db:DbSession,current_user:CurrentUser):

@@ -28,7 +28,7 @@ async def create_task(body : TaskSchema,db:AsyncSession,user_id:int,redis_pool:A
         pass
     return new_task
 
-async def get_tasks(db:AsyncSession,user_id:int,redis_pool:ArqRedis,page:int,page_size:int):
+async def get_tasks(db:AsyncSession,user_id:int,redis_pool:ArqRedis,page:int,page_size:int,is_completed:bool|None=None,search:str|None=None):
     # Cache key is unchanged from the pre-pagination design — still one
     # entry per user, holding the FULL task list. Given a personal task
     # list is realistically bounded (tens to low hundreds of rows, not
@@ -67,9 +67,23 @@ async def get_tasks(db:AsyncSession,user_id:int,redis_pool:ArqRedis,page:int,pag
             # missed optimization, not a reason to fail this request.
             pass
 
+    # Filtering happens in-memory on the already-fetched/cached full list —
+    # same reasoning as pagination: the cache stays one entry per user
+    # holding everything, filters/pages are just views over it, not
+    # separate cache keys to invalidate.
+    filtered = tasks
+    if is_completed is not None:
+        filtered = [t for t in filtered if t["is_completed"] == is_completed]
+    if search:
+        needle = search.lower()
+        filtered = [
+            t for t in filtered
+            if needle in t["title"].lower() or (t["description"] and needle in t["description"].lower())
+        ]
+
     start = (page - 1) * page_size
     end = start + page_size
-    return {"items": tasks[start:end], "has_next": end < len(tasks)}
+    return {"items": filtered[start:end], "has_next": end < len(filtered)}
 
 async def get_task(task_id:int,db:AsyncSession,user_id:int):
     return await get_task_or_404(db,task_id,user_id)

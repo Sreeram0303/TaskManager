@@ -41,3 +41,21 @@ def test_login_sets_cookies_and_returns_access_token(client):
     assert "refresh_token" not in r.json()  # must not leak into the body — cookie only
     assert client.cookies.get("refresh_token") is not None
     assert client.cookies.get("csrf_token") is not None
+
+
+def test_get_me_returns_current_user(client):
+    user = _unique_user()
+    client.post("/users/register", json=user)
+    login_r = client.post("/users/login", json={"email": user["email"], "password": user["password"]})
+    auth = {"Authorization": f"Bearer {login_r.json()['access_token']}"}
+
+    r = client.get("/users/me", headers=auth)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["email"] == user["email"]
+    assert body["username"] == user["username"]
+
+
+def test_get_me_requires_auth(client):
+    r = client.get("/users/me")
+    assert r.status_code == 401

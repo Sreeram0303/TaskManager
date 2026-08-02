@@ -55,6 +55,27 @@ def test_task_pagination(client):
     assert body["has_next"] is False
 
 
+def test_task_search_and_filter(client):
+    auth = _register_and_get_auth_header(client)
+    r = client.post("/tasks", json={"title": "write report", "description": "quarterly numbers"}, headers=auth)
+    report_id = r.json()["id"]
+    client.post("/tasks", json={"title": "buy groceries"}, headers=auth)
+    client.patch(f"/tasks/{report_id}", json={"is_completed": True}, headers=auth)
+
+    r = client.get("/tasks?search=report", headers=auth)
+    titles = [t["title"] for t in r.json()["items"]]
+    assert titles == ["write report"]
+
+    r = client.get("/tasks?search=quarterly", headers=auth)  # matches description, not title
+    assert [t["title"] for t in r.json()["items"]] == ["write report"]
+
+    r = client.get("/tasks?is_completed=true", headers=auth)
+    assert [t["title"] for t in r.json()["items"]] == ["write report"]
+
+    r = client.get("/tasks?is_completed=false", headers=auth)
+    assert [t["title"] for t in r.json()["items"]] == ["buy groceries"]
+
+
 def test_user_cannot_see_another_users_task(client):
     auth_a = _register_and_get_auth_header(client)
     auth_b = _register_and_get_auth_header(client)
