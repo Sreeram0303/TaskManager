@@ -7,19 +7,24 @@ from src.utils.settings import settings
 from typing import Annotated
 from fastapi import APIRouter, Depends,status, Request,Response, Cookie,HTTPException
 from src.user.dtos import UserSchema, UserResponseSchema, LoginSchema,TokenSchema
-
+from src.utils.dependencies import rate_limit_ip, check_rate_limit
+from arq.connections import ArqRedis
 router = APIRouter(prefix="/users",tags=["Users"])
 
-@router.post("/register",response_model=UserResponseSchema,responses={409: {"description": "Username or email already registered"}},status_code=status.HTTP_201_CREATED)
+@router.post("/register",response_model=UserResponseSchema,responses={409: {"description": "Username or email already registered"}},status_code=status.HTTP_201_CREATED,dependencies=[Depends(rate_limit_ip("register_attempts"))])
 async def register(body:UserSchema,request:Request,db:AsyncSession = Depends(get_db)):
     pool = request.app.state.redis_pool
     new_user = await controller.register(body,db)
     await pool.enqueue_job("send_welcome_email",body.email)
     return new_user
 
-@router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenSchema,responses={401:{"description":"Invalid Credentials"}})
-async def login(body:LoginSchema,response:Response,db:AsyncSession = Depends(get_db)):
+@router.post("/login",status_code=status.HTTP_200_OK,response_model=TokenSchema,responses={401:{"description":"Invalid Credentials"}},dependencies=[Depends(rate_limit_ip("login_attempts"))])
+async def login(body:LoginSchema,request:Request,response:Response,db:AsyncSession = Depends(get_db)):
+    redis_pool : ArqRedis = request.app.state.redis_pool
+    await check_rate_limit(redis_pool, f"login_email_attempts:{body.email}", ex=60, limit=5)
+
     token_payload = await controller.login(body,db)
+    
     response.set_cookie(value=token_payload["refresh_token"],
                         key="refresh_token",
                         httponly=True,

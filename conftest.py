@@ -15,6 +15,12 @@ _password = os.environ["POSTGRES_PASSWORD"]
 # settings afterward. This line has to come before the import below.
 os.environ["DB_CONNECTION"] = f"postgresql://{_user}:{_password}@localhost:5432/taskmanager_test"
 
+# Same reasoning as DB_CONNECTION above: redirect Redis to a DB index (15)
+# dedicated to tests, separate from the dev containers' DB 0 — so running
+# pytest never pollutes or gets polluted by rate-limit counters, cached
+# task lists, etc. sitting in the "real" Redis you're using via Postman.
+os.environ["REDIS_URL"] = "redis://localhost:6379/15"
+
 import pytest
 from fastapi.testclient import TestClient
 from main import app
@@ -24,6 +30,12 @@ from src.utils.db import engine
 @pytest.fixture
 def client():
     with TestClient(app) as c:
+        # Every test shares TestClient's synthetic client host, so the
+        # IP-based login rate limiter would otherwise accumulate hits
+        # ACROSS tests (not just within one) and start 429-ing unrelated
+        # tests once the count crosses the threshold. Flush before each
+        # test so rate-limit state never carries over.
+        c.portal.call(app.state.redis_pool.flushdb)
         yield c
         # engine is a module-level singleton, created once at import time and
         # bound to whichever event loop first used it. TestClient spins up a
