@@ -17,6 +17,7 @@ class User(Base):
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="owner")
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
+    roles: Mapped[list["Role"]] = relationship(secondary="user_roles", back_populates="users")
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"

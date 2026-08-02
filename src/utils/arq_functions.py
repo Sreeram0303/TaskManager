@@ -11,6 +11,11 @@ from src.user.models import RefreshToken
 # reference, and any query touching User (even indirectly, via mapper
 # configuration) blows up at runtime inside the worker only.
 from src.task.models import Task
+# Same reasoning, same lesson, applied proactively this time instead of
+# rediscovered live: User.roles references the user_roles table by name,
+# which only exists in Base.metadata once this module has been imported
+# somewhere in THIS process.
+from src.authz.models import Role, Permission
 import httpx
 REDIS_SETTINGS = RedisSettings.from_dsn(settings.REDIS_URL)
 

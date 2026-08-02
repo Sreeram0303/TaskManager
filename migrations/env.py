@@ -8,6 +8,7 @@ from alembic import context
 from src.utils.settings import settings
 from src.user.models import User
 from src.task.models import Task
+from src.authz.models import Role, Permission
 from src.utils.db import Base
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

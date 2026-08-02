@@ -7,8 +7,10 @@ from src.utils.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession 
 from src.utils.settings import settings
 from src.user.models import User
+from src.authz.models import Permission, Role, role_permissions, user_roles
 from src.utils.security import decode_token
 from typing import Annotated
+from sqlalchemy import select
 bearer_scheme = HTTPBearer()
 
 BearerCredentials = Annotated[HTTPAuthorizationCredentials,Depends(bearer_scheme)]
@@ -73,3 +75,26 @@ def rate_limit_ip(bucket: str, ex: int = 60, limit: int = 5):
         key = f"{bucket}:{request.client.host}"
         await check_rate_limit(redis_pool, key, ex, limit)
     return _rate_limit_ip
+
+
+def require_permission(permission_name: str):
+    # Same factory shape as rate_limit_ip, same reason: the permission
+    # name is known at route-decoration time, but current_user/db only
+    # exist per-request, so they belong on the inner closure.
+    async def _require_permission(current_user: CurrentUser, db: DbSession):
+        # A direct EXISTS-style join across the association tables —
+        # deliberately NOT current_user.roles / role.permissions (lazy
+        # relationship access in async SQLAlchemy without eager loading
+        # raises MissingGreenlet; this sidesteps that entirely with one
+        # query instead of touching the ORM relationship-loading machinery).
+        stmt = (
+            select(Permission.id)
+            .join(role_permissions, Permission.id == role_permissions.c.permission_id)
+            .join(Role, Role.id == role_permissions.c.role_id)
+            .join(user_roles, Role.id == user_roles.c.role_id)
+            .where(user_roles.c.user_id == current_user.id, Permission.name == permission_name)
+        )
+        result = await db.execute(stmt)
+        if result.first() is None:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return _require_permission

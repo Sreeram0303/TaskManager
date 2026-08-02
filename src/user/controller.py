@@ -2,6 +2,7 @@ from src.user.dtos import UserSchema,LoginSchema
 from sqlalchemy.ext.asyncio import AsyncSession 
 from sqlalchemy import select,update
 from src.user.models import User,RefreshToken
+from src.authz.models import Role
 from fastapi import HTTPException
 from src.utils.security import hash_password, verify_password, create_access_token,create_refresh_token, decode_token
 from sqlalchemy.exc import IntegrityError
@@ -23,6 +24,11 @@ async def register(body:UserSchema,db:AsyncSession):
         username = body.username,
         hashed_password = hashed_password
     )
+    # Every user gets the baseline "member" role automatically — "admin"
+    # is never self-assignable, that has to be a deliberate, separate
+    # action (a manual DB change today), not something registration grants.
+    member_role = (await db.scalars(select(Role).where(Role.name == "member"))).first()
+    new_user.roles.append(member_role)
     db.add(new_user)
     try :
         await db.commit()

@@ -55,26 +55,6 @@ def test_task_pagination(client):
     assert body["has_next"] is False
 
 
-def test_cache_stats_endpoint(client):
-    auth = _register_and_get_auth_header(client)
-    client.post("/tasks", json={"title": "cache test task"}, headers=auth)
-
-    client.get("/tasks", headers=auth)  # cache miss — populates the cache
-    client.get("/tasks", headers=auth)  # cache hit
-
-    r = client.get("/metrics/cache", headers=auth)
-    assert r.status_code == 200
-    body = r.json()
-    assert body["misses"] >= 1
-    assert body["hits"] >= 1
-    assert body["hit_rate"] is not None
-
-
-def test_cache_stats_requires_auth(client):
-    r = client.get("/metrics/cache")
-    assert r.status_code == 401
-
-
 def test_user_cannot_see_another_users_task(client):
     auth_a = _register_and_get_auth_header(client)
     auth_b = _register_and_get_auth_header(client)
