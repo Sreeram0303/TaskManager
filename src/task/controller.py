@@ -20,6 +20,7 @@ async def create_task(body : TaskSchema,db:AsyncSession,user_id:int,redis_pool:A
     key = f"tasks:{user_id}"
     try:
         await redis_pool.delete(key)
+        await redis_pool.publish(f"user:{user_id}:events",json.dumps({"event":"task_created","task":TaskResponseSchema.model_validate(new_task).model_dump(mode='json')}))
     except redis.exceptions.RedisError:
         # The write to Postgres already succeeded — a failed cache
         # invalidation shouldn't fail this request too. Worst case, the
@@ -68,6 +69,7 @@ async def modify_task(task_id:int,body:TaskUpdateSchema,db:AsyncSession,user_id:
     key = f"tasks:{user_id}"
     try:
         await redis_pool.delete(key)
+        await redis_pool.publish(f"user:{user_id}:events",json.dumps({"event":"task_updated","task":TaskResponseSchema.model_validate(task).model_dump(mode='json')}))
     except redis.exceptions.RedisError:
         # The write to Postgres already succeeded — a failed cache
         # invalidation shouldn't fail this request too. Worst case, the
@@ -87,6 +89,7 @@ async def update_task(task_id:int,body:TaskSchema,db:AsyncSession,user_id:int,re
     key = f"tasks:{user_id}"
     try:
         await redis_pool.delete(key)
+        await redis_pool.publish(f"user:{user_id}:events",json.dumps({"event":"task_updated","task":TaskResponseSchema.model_validate(task).model_dump(mode='json')}))
     except redis.exceptions.RedisError:
         # The write to Postgres already succeeded — a failed cache
         # invalidation shouldn't fail this request too. Worst case, the
@@ -100,7 +103,8 @@ async def delete_task(task_id:int,db:AsyncSession,user_id:int,redis_pool:ArqRedi
     await db.commit()
     key = f"tasks:{user_id}"
     try:
-        await redis_pool.delete(key)
+        await redis_pool.delete(key) 
+        await redis_pool.publish(f"user:{user_id}:events",json.dumps({"event":"task_deleted","task":TaskResponseSchema.model_validate(task).model_dump(mode='json')}))
     except redis.exceptions.RedisError:
         # The write to Postgres already succeeded — a failed cache
         # invalidation shouldn't fail this request too. Worst case, the

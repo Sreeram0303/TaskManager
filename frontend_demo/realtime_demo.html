@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Realtime sync demo — SSE + Redis Pub/Sub</title>
+  <style>
+    body { font-family: sans-serif; max-width: 760px; margin: 2em auto; }
+    section { border: 1px solid #ccc; padding: 1em; margin-bottom: 1em; border-radius: 6px; }
+    button { margin: 0.25em 0.5em 0.25em 0; }
+    pre { background: #eee; padding: 1em; white-space: pre-wrap; max-height: 220px; overflow-y: auto; }
+    #status { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Realtime task sync demo</h1>
+  <p>
+    Open this <b>exact page in two browser tabs</b> (or two windows), log in as the <b>same</b> account
+    in both, hit "Get ticket &amp; connect" in both, then trigger a task mutation from ONE tab — watch
+    the event arrive in the OTHER tab's log below, live, with no refresh.
+  </p>
+  <p>Served from a different origin than the API on purpose (same idea as the CORS demo) — run this
+     via a local static server on <code>http://localhost:5500</code>, matching the app's CORS config.</p>
+
+  <section>
+    <h3>1. Auth</h3>
+    <input id="email" placeholder="email" value="demo@example.com">
+    <input id="password" placeholder="password" type="password" value="testpassword123">
+    <br>
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+    <p>Access token: <code id="token-display">(none)</code></p>
+  </section>
+
+  <section>
+    <h3>2. Connect (ticket + SSE)</h3>
+    <button onclick="connect()">Get ticket &amp; connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+    <p>Status: <span id="status">disconnected</span></p>
+  </section>
+
+  <section>
+    <h3>3. Trigger task mutations</h3>
+    <button onclick="createTask()">Create task</button>
+    <button onclick="toggleLastTask()">Toggle last task's is_completed</button>
+    <button onclick="deleteLastTask()">Delete last task</button>
+    <p>Last task id: <code id="last-task-id">(none)</code></p>
+  </section>
+
+  <h3>Live event log (arriving via SSE):</h3>
+  <pre id="event-log"></pre>
+
+  <h3>API call log:</h3>
+  <pre id="api-log"></pre>
+
+  <script>
+    const API_URL = "http://localhost:8000";
+    let accessToken = null;
+    let lastTaskId = null;
+    let eventSource = null;
+
+    function logApi(msg) {
+      document.getElementById("api-log").textContent += msg + "\n";
+    }
+    function logEvent(msg) {
+      document.getElementById("event-log").textContent += msg + "\n";
+    }
+
+    async function register() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const res = await fetch(API_URL + "/users/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email.split("@")[0], email, password }),
+      });
+      logApi("register -> " + res.status);
+    }
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      // credentials: "include" — cross-origin, so the httpOnly refresh + csrf
+      // cookies only get stored if we explicitly opt in to sending/receiving
+      // cookies (matches the server's CORSMiddleware allow_credentials=True).
+      const res = await fetch(API_URL + "/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      const body = await res.json();
+      logApi("login -> " + res.status + " " + JSON.stringify(body));
+      if (res.ok) {
+        accessToken = body.access_token;
+        document.getElementById("token-display").textContent = accessToken.slice(0, 20) + "...";
+      }
+    }
+
+    async function connect() {
+      if (!accessToken) { alert("Login first"); return; }
+
+      // Step 1 of the ticket pattern: mint a short-lived, single-use ticket
+      // using the REAL access token, over a normal fetch (headers allowed here).
+      const res = await fetch(API_URL + "/realtime/", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + accessToken },
+      });
+      const body = await res.json();
+      logApi("sse-ticket -> " + res.status + " " + JSON.stringify(body));
+      if (!res.ok) return;
+
+      // Step 2: EventSource can't set headers at all, so the (disposable,
+      // 30s, single-use) ticket rides in the query string instead — never
+      // the real access token.
+      eventSource = new EventSource(`${API_URL}/realtime/events?ticket=${body.ticket}`);
+      eventSource.onopen = () => { document.getElementById("status").textContent = "connected"; };
+      eventSource.onmessage = (e) => { logEvent(e.data); };
+      eventSource.onerror = () => { document.getElementById("status").textContent = "error / disconnected"; };
+    }
+
+    function disconnect() {
+      if (eventSource) { eventSource.close(); eventSource = null; }
+      document.getElementById("status").textContent = "disconnected";
+    }
+
+    async function createTask() {
+      if (!accessToken) { alert("Login first"); return; }
+      const res = await fetch(API_URL + "/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
+        body: JSON.stringify({ title: "Demo task " + Date.now() }),
+      });
+      const body = await res.json();
+      logApi("create task -> " + res.status + " " + JSON.stringify(body));
+      if (res.ok) {
+        lastTaskId = body.id;
+        document.getElementById("last-task-id").textContent = lastTaskId;
+      }
+    }
+
+    async function toggleLastTask() {
+      if (!lastTaskId) { alert("Create a task first"); return; }
+      const res = await fetch(API_URL + "/tasks/" + lastTaskId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
+        body: JSON.stringify({ is_completed: true }),
+      });
+      const body = await res.json();
+      logApi("patch task -> " + res.status + " " + JSON.stringify(body));
+    }
+
+    async function deleteLastTask() {
+      if (!lastTaskId) { alert("Create a task first"); return; }
+      const res = await fetch(API_URL + "/tasks/" + lastTaskId, {
+        method: "DELETE",
+        headers: { "Authorization": "Bearer " + accessToken },
+      });
+      logApi("delete task -> " + res.status);
+      lastTaskId = null;
+      document.getElementById("last-task-id").textContent = "(none)";
+    }
+  </script>
+</body>
+</html>

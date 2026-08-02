@@ -4,6 +4,7 @@
 from fastapi import FastAPI
 from src.task.router import router as task_router 
 from src.user.router import router as user_router
+from src.realtime.router import router as realtime_router
 from contextlib import asynccontextmanager
 from src.utils.logging import log_requests
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,5 +31,5 @@ app.add_middleware(
 app.middleware("http")(log_requests)
 app.include_router(task_router)
 app.include_router(user_router)
-
+app.include_router(realtime_router)
 
