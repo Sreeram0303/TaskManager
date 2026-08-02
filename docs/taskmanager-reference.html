@@ -1,0 +1,1275 @@
+<title>TaskManager — Engineering Reference</title>
+<style>
+  :root{
+    --bg:#F3F4F6;
+    --bg-elevated:#FFFFFF;
+    --bg-card:#EBEDF1;
+    --border:#D7DAE0;
+    --ink:#1B212B;
+    --ink-dim:#5B6472;
+    --accent:#B8792A;
+    --accent-soft:rgba(184,121,42,0.12);
+    --code-bg:#1B212B;
+    --code-ink:#E4E1D8;
+    --code-dim:#8B93A1;
+    --font-mono: ui-monospace,"Cascadia Code","JetBrains Mono","SFMono-Regular",Menlo,monospace;
+    --font-sans: "Segoe UI", ui-sans-serif, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14181F; --bg-elevated:#1B212B; --bg-card:#1F2530;
+      --border:#2A313D; --ink:#E4E1D8; --ink-dim:#8B93A1;
+      --accent:#E0A94D; --accent-soft:rgba(224,169,77,0.14);
+      --code-bg:#0F1319; --code-ink:#E4E1D8; --code-dim:#78818F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14181F; --bg-elevated:#1B212B; --bg-card:#1F2530;
+    --border:#2A313D; --ink:#E4E1D8; --ink-dim:#8B93A1;
+    --accent:#E0A94D; --accent-soft:rgba(224,169,77,0.14);
+    --code-bg:#0F1319; --code-ink:#E4E1D8; --code-dim:#78818F;
+  }
+  :root[data-theme="light"]{
+    --bg:#F3F4F6; --bg-elevated:#FFFFFF; --bg-card:#EBEDF1;
+    --border:#D7DAE0; --ink:#1B212B; --ink-dim:#5B6472;
+    --accent:#B8792A; --accent-soft:rgba(184,121,42,0.12);
+    --code-bg:#1B212B; --code-ink:#E4E1D8; --code-dim:#8B93A1;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--font-sans); line-height:1.65;
+  }
+  a{ color:var(--accent); }
+  code{ font-family:var(--font-mono); }
+
+  .layout{ display:flex; align-items:flex-start; max-width:1400px; margin:0 auto; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+    width:280px; flex:none; padding:1.5rem 1.25rem 3rem;
+    border-right:1px solid var(--border);
+  }
+  .sidebar-title{
+    font-family:var(--font-mono); font-weight:700; font-size:0.95rem;
+    letter-spacing:0.04em; margin-bottom:0.3rem;
+  }
+  .sidebar-sub{ font-size:0.72rem; color:var(--ink-dim); margin-bottom:1.5rem; }
+  .toc-top a{
+    display:block; padding:0.35rem 0; font-size:0.85rem; color:var(--ink);
+    text-decoration:none; border-bottom:1px dashed var(--border);
+  }
+  .toc-group{
+    font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.09em;
+    text-transform:uppercase; color:var(--accent); margin:1.3rem 0 0.4rem;
+  }
+  .toc-item{
+    display:flex; gap:0.5rem; padding:0.28rem 0; font-size:0.82rem;
+    color:var(--ink-dim); text-decoration:none;
+  }
+  .toc-item:hover{ color:var(--accent); }
+  .toc-num{ font-family:var(--font-mono); color:var(--accent); flex:none; width:1.6rem; }
+
+  /* ---------- main ---------- */
+  main{ flex:1; min-width:0; padding:2.5rem 3rem 6rem; }
+  .titleblock{ border-bottom:2px solid var(--ink); padding-bottom:1.25rem; margin-bottom:2rem; }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--ink-dim); margin:0 0 0.5rem;
+  }
+  h1{
+    font-family:var(--font-mono); font-size:1.9rem; margin:0 0 0.6rem;
+    text-wrap:balance; letter-spacing:0.01em;
+  }
+  .lede{ max-width:70ch; color:var(--ink-dim); font-size:1rem; }
+
+  h2.section-title{
+    font-family:var(--font-mono); font-size:1.15rem; text-transform:uppercase;
+    letter-spacing:0.05em; margin:0 0 1rem; padding-bottom:0.6rem;
+    border-bottom:1px solid var(--border);
+  }
+  .top-diagram-block{ margin-bottom:3.5rem; }
+  .diagram-wrap{
+    overflow-x:auto; border:1px solid var(--border); border-radius:8px;
+    background:var(--bg-elevated); padding:1rem;
+  }
+  .diagram-caption{ font-size:0.88rem; color:var(--ink-dim); margin-top:0.8rem; max-width:72ch; }
+
+  /* ---------- hand-built diagrams (no JS dependency) ---------- */
+  .flowd{ display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; font-family:var(--font-mono); font-size:0.76rem; }
+  .flowd.tb{ flex-direction:column; align-items:flex-start; }
+  .fnode{
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:6px;
+    padding:0.5rem 0.7rem; color:var(--ink); line-height:1.35; text-align:left; max-width:15rem;
+  }
+  .fnode.decision{ border-style:dashed; border-color:var(--accent); background:var(--accent-soft); border-radius:6px; }
+  .fnode.store{ border-radius:999px; padding:0.5rem 1rem; }
+  .fnode small{ display:block; color:var(--ink-dim); font-size:0.85em; margin-top:0.15rem; }
+  .farr{ display:flex; flex-direction:column; align-items:center; color:var(--ink-dim); font-size:0.66rem; min-width:1.6rem; text-align:center; }
+  .farr::before{ content:"→"; color:var(--accent); font-size:1.05rem; line-height:1; }
+  .flowd.tb .farr{ flex-direction:row; align-self:flex-start; margin-left:1.1rem; gap:0.4rem; }
+  .flowd.tb .farr::before{ content:"↓"; }
+  .fgroup{ display:flex; flex-direction:column; gap:0.45rem; }
+  .frow{ display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+  .fbranches{ display:flex; flex-direction:column; gap:0.35rem; margin-left:0.5rem; padding-left:0.9rem; border-left:2px solid var(--border); }
+  .fbranch-label{ color:var(--ink-dim); font-size:0.68rem; margin-bottom:0.15rem; }
+
+  .seqd{ font-family:var(--font-mono); font-size:0.76rem; }
+  .seq-actors{ display:flex; gap:1.2rem; flex-wrap:wrap; margin-bottom:0.6rem; padding-bottom:0.5rem; border-bottom:1px solid var(--border); }
+  .seq-actor{ font-weight:700; color:var(--accent); }
+  .seq-step{ display:flex; align-items:baseline; gap:0.5rem; padding:0.22rem 0; flex-wrap:wrap; }
+  .seq-step .who{ color:var(--accent); font-weight:700; white-space:nowrap; }
+  .seq-step .arr{ color:var(--ink-dim); }
+  .seq-step .msg{ color:var(--ink); }
+  .seq-note{ font-style:italic; color:var(--ink-dim); padding:0.3rem 0.1rem; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border); margin:0.35rem 0; }
+  .seq-alt{ border-left:2px solid var(--accent); padding-left:0.7rem; margin:0.3rem 0; display:flex; flex-direction:column; gap:0.15rem; }
+  .seq-alt-label{ font-size:0.66rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:0.1rem; }
+
+  .erd-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:0.75rem; font-family:var(--font-mono); font-size:0.74rem; }
+  .erd-card{ background:var(--bg-elevated); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .erd-card h5{ margin:0; padding:0.4rem 0.6rem; background:var(--accent-soft); color:var(--accent); font-size:0.72rem; letter-spacing:0.04em; }
+  .erd-card ul{ list-style:none; margin:0; padding:0.4rem 0.6rem; color:var(--ink-dim); }
+  .erd-card li{ padding:0.1rem 0; }
+  .erd-card li b{ color:var(--ink); }
+  .erd-rels{ margin-top:0.75rem; font-family:var(--font-mono); font-size:0.74rem; color:var(--ink-dim); }
+  .erd-rels li{ margin-bottom:0.25rem; }
+  .erd-rels code{ color:var(--accent); }
+
+  .phase-heading{
+    font-family:var(--font-mono); font-size:0.78rem; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--accent); margin:3.5rem 0 1.2rem;
+    padding-top:1.5rem; border-top:2px solid var(--accent);
+  }
+
+  .concept{
+    background:var(--bg-elevated); border:1px solid var(--border);
+    border-radius:10px; padding:1.75rem 2rem; margin-bottom:1.75rem;
+    scroll-margin-top:1.5rem;
+  }
+  .concept-head{ display:flex; align-items:baseline; gap:0.9rem; margin-bottom:0.3rem; }
+  .concept-num{ font-family:var(--font-mono); color:var(--accent); font-size:1.1rem; font-weight:700; }
+  .concept-title{ font-family:var(--font-mono); font-size:1.25rem; font-weight:700; text-wrap:balance; }
+  .concept-tag{
+    font-family:var(--font-mono); font-size:0.66rem; letter-spacing:0.07em;
+    text-transform:uppercase; color:var(--accent); background:var(--accent-soft);
+    padding:0.18rem 0.55rem; border-radius:4px; margin-bottom:1rem; display:inline-block;
+  }
+  .concept .diagram-wrap{ margin:0.9rem 0 1.1rem; background:var(--bg-card); }
+  .refresher{ font-size:0.94rem; max-width:74ch; margin:0 0 1rem; }
+  .refresher b{ color:var(--ink); }
+  h4.subhead{
+    font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-dim); margin:1.1rem 0 0.5rem;
+  }
+  ul.details{ margin:0 0 1rem; padding-left:1.2rem; font-size:0.9rem; }
+  ul.details li{ margin-bottom:0.4rem; }
+  ul.details code{ background:var(--accent-soft); padding:0.05rem 0.35rem; border-radius:3px; font-size:0.85em; }
+
+  .code-wrap{ overflow-x:auto; border-radius:8px; }
+  pre.code{
+    margin:0; background:var(--code-bg); color:var(--code-ink);
+    font-family:var(--font-mono); font-size:0.82rem; line-height:1.55;
+    padding:1rem 1.2rem; border-radius:8px; overflow-x:auto; white-space:pre;
+  }
+  .code-label{
+    font-family:var(--font-mono); font-size:0.68rem; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--code-dim); margin-bottom:0.35rem;
+  }
+  pre.code .c{ color:var(--code-dim); }
+
+  footer.end{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); font-size:0.85rem; color:var(--ink-dim); }
+
+  @media (max-width: 900px){
+    .sidebar{ display:none; }
+    main{ padding:1.5rem 1.25rem 4rem; }
+  }
+</style>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-title">TASKMANAGER</div>
+    <div class="sidebar-sub">Engineering Reference</div>
+    <div class="toc-top">
+      <a href="#architecture">Architecture</a>
+      <a href="#schema">Database Schema</a>
+    </div>
+
+    <div class="toc-group">A · Foundations</div>
+    <a class="toc-item" href="#c01"><span class="toc-num">01</span>Config Management</a>
+    <a class="toc-item" href="#c02"><span class="toc-num">02</span>SQLAlchemy Core</a>
+    <a class="toc-item" href="#c03"><span class="toc-num">03</span>Declarative Models</a>
+    <a class="toc-item" href="#c04"><span class="toc-num">04</span>Feature Routers</a>
+    <a class="toc-item" href="#c05"><span class="toc-num">05</span>Response Models</a>
+
+    <div class="toc-group">B · Auth Core</div>
+    <a class="toc-item" href="#c06"><span class="toc-num">06</span>Password Hashing</a>
+    <a class="toc-item" href="#c07"><span class="toc-num">07</span>JWT Access Tokens</a>
+    <a class="toc-item" href="#c08"><span class="toc-num">08</span>Bearer Dependency Chain</a>
+    <a class="toc-item" href="#c09"><span class="toc-num">09</span>Refresh Rotation</a>
+    <a class="toc-item" href="#c10"><span class="toc-num">10</span>Ownership Authz</a>
+
+    <div class="toc-group">C · Web Security</div>
+    <a class="toc-item" href="#c11"><span class="toc-num">11</span>httpOnly Cookies</a>
+    <a class="toc-item" href="#c12"><span class="toc-num">12</span>CSRF Double-Submit</a>
+    <a class="toc-item" href="#c13"><span class="toc-num">13</span>CORS</a>
+    <a class="toc-item" href="#c14"><span class="toc-num">14</span>Security Headers</a>
+    <a class="toc-item" href="#c15"><span class="toc-num">15</span>HTTPS / TLS</a>
+
+    <div class="toc-group">D · Background Work</div>
+    <a class="toc-item" href="#c16"><span class="toc-num">16</span>BackgroundTasks</a>
+    <a class="toc-item" href="#c17"><span class="toc-num">17</span>Redis Queue (arq)</a>
+    <a class="toc-item" href="#c18"><span class="toc-num">18</span>Activity Feed</a>
+
+    <div class="toc-group">E · Data &amp; Performance</div>
+    <a class="toc-item" href="#c19"><span class="toc-num">19</span>Alembic Migrations</a>
+    <a class="toc-item" href="#c20"><span class="toc-num">20</span>Async SQLAlchemy</a>
+    <a class="toc-item" href="#c21"><span class="toc-num">21</span>Cascade Deletes</a>
+    <a class="toc-item" href="#c22"><span class="toc-num">22</span>N+1 &amp; Eager Loading</a>
+    <a class="toc-item" href="#c23"><span class="toc-num">23</span>Redis Cache-Aside</a>
+    <a class="toc-item" href="#c24"><span class="toc-num">24</span>Pagination &amp; Filtering</a>
+    <a class="toc-item" href="#c25"><span class="toc-num">25</span>Rate Limiting</a>
+
+    <div class="toc-group">F · Realtime &amp; RBAC</div>
+    <a class="toc-item" href="#c26"><span class="toc-num">26</span>SSE + Redis Pub/Sub</a>
+    <a class="toc-item" href="#c27"><span class="toc-num">27</span>Ticket-Based Auth</a>
+    <a class="toc-item" href="#c28"><span class="toc-num">28</span>RBAC</a>
+
+    <div class="toc-group">G · Infrastructure</div>
+    <a class="toc-item" href="#c29"><span class="toc-num">29</span>Middleware</a>
+    <a class="toc-item" href="#c30"><span class="toc-num">30</span>Docker Compose</a>
+    <a class="toc-item" href="#c31"><span class="toc-num">31</span>CI (GitHub Actions)</a>
+    <a class="toc-item" href="#c32"><span class="toc-num">32</span>Test Isolation</a>
+  </nav>
+
+  <main>
+    <div class="titleblock">
+      <p class="eyebrow">Personal Engineering Reference · TaskManager API</p>
+      <h1>Every concept, one page — diagram, refresher, real code</h1>
+      <p class="lede">32 concepts covered while building this project, each with the same shape: a diagram of the mechanism, a short refresher of the idea and why it exists, the technical details worth remembering, and the actual code from this repo — not generic boilerplate.</p>
+    </div>
+
+    <section id="architecture" class="top-diagram-block">
+      <h2 class="section-title">System Architecture</h2>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 980 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;min-width:760px;font-family:var(--font-mono);">
+          <defs>
+            <marker id="arch-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"></path>
+            </marker>
+          </defs>
+          <!-- compose boundary -->
+          <rect x="240" y="20" width="520" height="330" rx="8" fill="none" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="6 5"></rect>
+          <text x="256" y="42" font-size="11" letter-spacing="1" fill="var(--ink-dim)">DOCKER-COMPOSE.YML</text>
+
+          <!-- edges -->
+          <path d="M180,205 L280,105" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arch-arrow)"></path>
+          <rect x="180" y="150" width="150" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="184" y="160" font-size="10" fill="var(--ink-dim)">HTTPS · JWT + cookies</text>
+
+          <path d="M340,150 L540,120" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arch-arrow)"></path>
+          <rect x="350" y="118" width="70" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="354" y="128" font-size="10" fill="var(--ink-dim)">asyncpg</text>
+
+          <path d="M340,175 L540,240" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arch-arrow)"></path>
+          <rect x="340" y="185" width="230" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="344" y="195" font-size="10" fill="var(--ink-dim)">cache · rate-limit · enqueue · publish</text>
+
+          <path d="M620,285 L340,300" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arch-arrow)"></path>
+          <rect x="440" y="278" width="60" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="444" y="288" font-size="10" fill="var(--ink-dim)">job pop</text>
+
+          <path d="M760,300 L820,140" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#arch-arrow)"></path>
+          <rect x="770" y="210" width="90" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="774" y="220" font-size="10" fill="var(--ink-dim)">HTTPS POST</text>
+
+          <path d="M900,255 L640,110" fill="none" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arch-arrow)"></path>
+          <path d="M900,255 L650,230" fill="none" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arch-arrow)"></path>
+          <rect x="800" y="175" width="110" height="14" fill="var(--bg-elevated)"></rect>
+          <text x="804" y="185" font-size="10" fill="var(--ink-dim)">ephemeral, isolated</text>
+
+          <!-- nodes -->
+          <rect x="20" y="170" width="160" height="70" rx="6" fill="var(--bg-elevated)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text x="34" y="200" font-size="12" font-weight="700" fill="var(--ink)">Client</text>
+          <text x="34" y="218" font-size="10" fill="var(--ink-dim)">Browser / Postman</text>
+
+          <rect x="280" y="70" width="200" height="90" rx="6" fill="var(--bg-elevated)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text x="294" y="100" font-size="12" font-weight="700" fill="var(--ink)">App</text>
+          <text x="294" y="118" font-size="10" fill="var(--ink-dim)">FastAPI :8000</text>
+
+          <rect x="280" y="280" width="200" height="60" rx="6" fill="var(--bg-elevated)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text x="294" y="308" font-size="12" font-weight="700" fill="var(--ink)">Worker</text>
+          <text x="294" y="325" font-size="10" fill="var(--ink-dim)">arq</text>
+
+          <rect x="540" y="70" width="180" height="70" rx="35" fill="var(--bg-elevated)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text x="600" y="110" font-size="12" font-weight="700" fill="var(--ink)" text-anchor="middle">PostgreSQL</text>
+
+          <rect x="540" y="185" width="180" height="90" rx="45" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"></rect>
+          <text x="630" y="220" font-size="12" font-weight="700" fill="var(--accent)" text-anchor="middle">Redis</text>
+          <text x="630" y="238" font-size="9.5" fill="var(--ink-dim)" text-anchor="middle">cache · queue · pub/sub</text>
+
+          <rect x="820" y="90" width="140" height="60" rx="6" fill="var(--bg-elevated)" stroke="var(--ink)" stroke-width="1.5"></rect>
+          <text x="834" y="118" font-size="12" font-weight="700" fill="var(--ink)">Resend</text>
+          <text x="834" y="135" font-size="10" fill="var(--ink-dim)">email API</text>
+
+          <rect x="820" y="250" width="140" height="80" rx="6" fill="none" stroke="var(--ink-dim)" stroke-width="1.5" stroke-dasharray="4 4"></rect>
+          <text x="834" y="278" font-size="12" font-weight="700" fill="var(--ink)">GitHub Actions</text>
+          <text x="834" y="295" font-size="10" fill="var(--ink-dim)">CI, on push/PR</text>
+        </svg>
+      </div>
+      <p class="diagram-caption">One Redis instance, three roles (job queue, cache, pub/sub), separated only by key-naming convention. App and Worker share one built image, differing only in startup command.</p>
+    </section>
+
+    <section id="schema" class="top-diagram-block">
+      <h2 class="section-title">Database Schema</h2>
+      <div class="diagram-wrap">
+        <div class="erd-grid">
+          <div class="erd-card"><h5>USERS</h5><ul>
+            <li><b>id</b> PK</li><li>username</li><li>email</li><li>hashed_password</li><li>is_active</li><li>created_at</li>
+          </ul></div>
+          <div class="erd-card"><h5>USER_TASKS</h5><ul>
+            <li><b>id</b> PK</li><li>user_id FK</li><li>title</li><li>description</li><li>is_completed</li><li>created_at</li>
+          </ul></div>
+          <div class="erd-card"><h5>REFRESH_TOKENS</h5><ul>
+            <li><b>id</b> PK</li><li>user_id FK</li><li>jti</li><li>expires_at</li><li>revoked</li><li>created_at</li>
+          </ul></div>
+          <div class="erd-card"><h5>ACTIVITY_LOGS</h5><ul>
+            <li><b>id</b> PK</li><li>user_id FK</li><li>action</li><li>detail</li><li>created_at</li>
+          </ul></div>
+          <div class="erd-card"><h5>ROLES</h5><ul>
+            <li><b>id</b> PK</li><li>name</li>
+          </ul></div>
+          <div class="erd-card"><h5>PERMISSIONS</h5><ul>
+            <li><b>id</b> PK</li><li>name</li>
+          </ul></div>
+        </div>
+        <ul class="erd-rels">
+          <li><code>USERS 1 → *</code> USER_TASKS &nbsp;·&nbsp; <code>1 → *</code> REFRESH_TOKENS &nbsp;·&nbsp; <code>1 → *</code> ACTIVITY_LOGS &nbsp;(<code>ondelete="CASCADE"</code>)</li>
+          <li><code>USERS * ↔ *</code> ROLES via <b>user_roles</b> (association table)</li>
+          <li><code>ROLES * ↔ *</code> PERMISSIONS via <b>role_permissions</b> (association table)</li>
+        </ul>
+      </div>
+      <p class="diagram-caption">Every FK cascades on delete (<code>ondelete="CASCADE"</code>). <code>user_roles</code> / <code>role_permissions</code> are plain association tables carrying the two many-to-many relationships, not full ORM models.</p>
+    </section>
+
+    <!-- ============ PHASE A ============ -->
+    <div class="phase-heading">Phase A — Foundations</div>
+
+    <article class="concept" id="c01">
+      <div class="concept-head"><span class="concept-num">01</span><span class="concept-title">Configuration Management</span></div>
+      <span class="concept-tag">Foundations</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fgroup"><div class="fnode">.env file</div><div class="fnode">real env vars</div></div>
+        <div class="farr"></div>
+        <div class="fnode">BaseSettings</div>
+        <div class="farr">validated once,<br>at import</div>
+        <div class="fnode">settings singleton</div>
+        <div class="farr"></div>
+        <div class="fnode">used everywhere via import</div>
+      </div></div>
+      <p class="refresher"><b>The idea:</b> <code>os.getenv</code> returns raw strings (or <code>None</code>), fails late (crashes on first use, not at boot), and scatters config reads across the codebase. Pydantic's <code>BaseSettings</code> validates every value <b>at startup</b> — missing or malformed config refuses to boot, with a clear error, instead of surfacing at 3am in production.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Priority: real env var &gt; <code>.env</code> file &gt; class default — dev/staging/prod need zero code changes.</li>
+        <li><code>settings = Settings()</code> constructed <b>once</b>, at module import — a validated singleton, not re-parsed per call.</li>
+        <li>Type coercion is automatic: <code>"False"</code> in <code>.env</code> becomes a real Python <code>bool</code>, not a truthy string.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/settings.py</code></h4>
+      <div class="code-wrap"><pre class="code"><span class="c"># fail fast: app refuses to boot if a required field is missing</span>
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    DB_CONNECTION: str
+    JWT_SECRET_KEY: str
+    JWT_ACCESS_EXPIRE_MINUTES: int = 30
+    REDIS_URL: str
+    COOKIE_SECURE: bool = False   <span class="c"># False in dev, True behind real HTTPS</span>
+
+settings = Settings()   <span class="c"># singleton — import this, never re-instantiate</span></pre></div>
+    </article>
+
+    <article class="concept" id="c02">
+      <div class="concept-head"><span class="concept-num">02</span><span class="concept-title">SQLAlchemy Core Objects</span></div>
+      <span class="concept-tag">Foundations</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">engine<small>HOW to talk to the DB — connection pool, dialect</small></div>
+        <div class="farr">bound to</div>
+        <div class="fnode">sessionmaker<small>HOW to stamp fresh Sessions</small></div>
+        <div class="farr">produces</div>
+        <div class="fnode">Session (per request)<small>Unit of Work</small></div>
+      </div>
+      <div class="flowd" style="margin-top:0.5rem;"><div class="fnode">Base<small>class-to-table registry</small></div></div></div>
+      <p class="refresher">Three objects, three separate questions. <code>engine</code>: how do I physically talk to the DB (pools connections — a taxi company, not a car built per ride). <code>Base</code>: how do my Python classes map to tables (a registry — every subclass "enrolls"). <code>sessionmaker</code>: how do I manage one transaction (a Session is a shopping cart tracking adds/changes, all-or-nothing at <code>commit()</code>).</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>create_engine()</code> is lazy — connects to nothing until the first real query.</li>
+        <li>Long-lived infra (engine/Base/factory) created <b>once per app</b>; Sessions are <b>one per request</b>, then closed.</li>
+        <li>Two requests sharing a Session = two strangers sharing one shopping cart.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/db.py</code></h4>
+      <div class="code-wrap"><pre class="code">engine = create_async_engine(url=settings.DB_CONNECTION.replace("postgresql://","postgresql+asyncpg://"))
+LocalSession = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+class Base(DeclarativeBase):
+    pass
+
+async def get_db():
+    session = LocalSession()
+    try:
+        yield session          <span class="c"># request handling happens here</span>
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()  <span class="c"># same setup→yield→cleanup shape as middleware/lifespan</span></pre></div>
+    </article>
+
+    <article class="concept" id="c03">
+      <div class="concept-head"><span class="concept-num">03</span><span class="concept-title">Declarative Models (2.0 style)</span></div>
+      <span class="concept-tag">Foundations</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">Mapped[int]<small>Python-side truth</small></div>
+        <div class="farr">infers<br>column type</div>
+        <div class="fnode">mapped_column()<small>DB-only extras</small></div>
+        <div class="farr"></div>
+        <div class="fnode">real table column</div>
+      </div></div>
+      <p class="refresher">The old <code>Column</code> style was writing DDL in Python clothes — no autocomplete, no type checking. 2.0 style: write an ordinary typed class, annotate DB-only details on the side. <code>Mapped[str | None]</code> reads exactly like an Optional field in a Pydantic DTO — nullability lives in the type itself.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>Mapped[X]</code> = what the attribute <i>is</i> in Python; SQLAlchemy infers the SQL type from it.</li>
+        <li><code>mapped_column(...)</code> = extras only (<code>primary_key</code>, <code>ForeignKey</code>, <code>unique</code>) — omit entirely if there are none.</li>
+        <li>Querying: <code>select(Task).where(...)</code> via <code>session.execute</code> — <code>session.query()</code> is the legacy 1.x idiom.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/models.py</code></h4>
+      <div class="code-wrap"><pre class="code">class Task(Base):
+    __tablename__ = "user_tasks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    title: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str | None]         <span class="c"># nullable — the | None IS the schema</span>
+    is_completed: Mapped[bool] = mapped_column(default=False)
+    owner: Mapped["User"] = relationship(back_populates="tasks")</pre></div>
+    </article>
+
+    <article class="concept" id="c04">
+      <div class="concept-head"><span class="concept-num">04</span><span class="concept-title">Feature Routers</span></div>
+      <span class="concept-tag">Foundations</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fgroup">
+          <div class="fnode">task/router.py<small>prefix /tasks</small></div>
+          <div class="fnode">user/router.py<small>prefix /users</small></div>
+          <div class="fnode">admin/router.py<small>prefix /admin</small></div>
+        </div>
+        <div class="farr">include_router</div>
+        <div class="fnode">main.py — app</div>
+      </div></div>
+      <p class="refresher"><b>Mental model — a shopping mall:</b> <code>app</code> is the building; each <code>APIRouter</code> is a store organizing its own shelves without knowing its floor. <code>include_router</code> is the mall assigning the unit number, prepending the <code>prefix</code>. Routes inside a router are written relative — <code>@router.get("/{id}")</code>, not <code>"/tasks/{id}"</code>.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Solves file organization <i>and</i> dependency direction — features never import <code>main.py</code>; <code>main.py</code> assembles features.</li>
+        <li><code>from main import app</code> inside a feature file = circular import, the exact design this pattern prevents.</li>
+        <li>Forgetting <code>include_router</code> → the router silently doesn't exist. Same "registered nowhere" bug family as a forgotten migration import.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>main.py</code></h4>
+      <div class="code-wrap"><pre class="code">from src.task.router import router as task_router
+from src.admin.router import router as admin_router
+<span class="c"># ...</span>
+app.include_router(task_router)
+app.include_router(admin_router)   <span class="c"># -> every /admin/* route now exists</span></pre></div>
+    </article>
+
+    <article class="concept" id="c05">
+      <div class="concept-head"><span class="concept-num">05</span><span class="concept-title">Response Models &amp; Serialization</span></div>
+      <span class="concept-tag">Foundations</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fgroup">
+          <div class="frow"><div class="fnode">ORM object<small>attributes</small></div><div class="farr">from_attributes=True</div></div>
+          <div class="frow"><div class="fnode">dict / JSON<small>keys</small></div><div class="farr">default behaviour</div></div>
+        </div>
+        <div class="fnode">Pydantic DTO</div>
+      </div></div>
+      <p class="refresher">Pydantic's default read protocol is <b>keys</b> (<code>data["title"]</code>) — its home turf is the JSON boundary. ORM objects store data as <b>attributes</b> (<code>task.title</code>). <code>from_attributes=True</code> grants a second protocol: "not a dict? try <code>getattr</code> on each field instead."</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Modern FastAPI's <code>response_model</code> path passes <code>from_attributes=True</code> per-call automatically — verified by reading <code>fastapi/_compat/v2.py</code>, not assumed from older tutorials.</li>
+        <li>Still required for <b>manual</b> conversions — <code>TaskResponseSchema.model_validate(task)</code> in controllers, tests, Pub/Sub payloads.</li>
+        <li>Put it on schemas whose purpose is "built from ORM objects" — leave it off plain request DTOs.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/dtos.py</code></h4>
+      <div class="code-wrap"><pre class="code">class TaskResponseSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    is_completed: bool
+    created_at: datetime</pre></div>
+    </article>
+
+    <!-- ============ PHASE B ============ -->
+    <div class="phase-heading">Phase B — Auth Core</div>
+
+    <article class="concept" id="c06">
+      <div class="concept-head"><span class="concept-num">06</span><span class="concept-title">Password Hashing</span></div>
+      <span class="concept-tag">Auth Core</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fgroup">
+          <div class="fnode">plaintext password</div>
+          <div class="fnode">random salt<small>born at hash time</small></div>
+        </div>
+        <div class="farr"></div>
+        <div class="fnode decision">argon2id<small>slow + memory-hard</small></div>
+        <div class="farr"></div>
+        <div class="fnode">PHC string<small>$argon2id$v=19$m=...$salt$digest</small></div>
+        <div class="farr"></div>
+        <div class="fnode store">stored in users row</div>
+      </div></div>
+      <p class="refresher"><b>Threat model:</b> assume the DB eventually leaks. The question isn't "prevent the breach," it's "what does the attacker get." Hashing is one-way — meat grinder analogy: mince never becomes steak again, but two batches from the same cut match. Argon2id over bcrypt/sha256 specifically because it's <b>memory-hard</b> — GPU farms can't feed thousands of parallel cores enough RAM per guess.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Salt's job is <b>uniqueness</b>, not secrecy — kills rainbow tables, lives inside the PHC string itself, right in the row.</li>
+        <li>Verify uses <b>constant-time comparison</b> — naive <code>==</code> leaks timing side-channels.</li>
+        <li>CPU-bound → wrapped in <code>run_in_threadpool</code> at the call site, never awaited eagerly (a real bug caught by the test suite — see 20).</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/security.py</code></h4>
+      <div class="code-wrap"><pre class="code">password_hash = PasswordHash.recommended()   <span class="c"># policy, not hand-picked crypto params</span>
+
+def hash_password(password: str) -> str:
+    return password_hash.hash(password)
+
+def verify_password(password: str, hashed: str) -> bool:
+    return password_hash.verify(password, hashed)   <span class="c"># constant-time internally</span></pre></div>
+    </article>
+
+    <article class="concept" id="c07">
+      <div class="concept-head"><span class="concept-num">07</span><span class="concept-title">JWT Access Tokens</span></div>
+      <span class="concept-tag">Auth Core</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fgroup">
+          <div class="fnode">header<small>{alg: HS256}</small></div>
+          <div class="fnode">payload<small>{sub, exp, type}</small></div>
+        </div>
+        <div class="farr"></div>
+        <div class="fnode decision">HMAC_SHA256(header.payload, SECRET)</div>
+        <div class="farr"></div>
+        <div class="fnode">header.payload.signature</div>
+      </div></div>
+      <p class="refresher"><b>Festival wristband, not a guest list:</b> the server writes a signed note once, the client carries it, the server verifies its own signature instead of a DB lookup every request. The payload is <b>readable by anyone</b> (base64, not encryption) — the signature makes it tamper-proof, not secret. Claims carry identifiers, never secrets.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>sub</code> must be a <b>string</b> (RFC 7519) — proven live: pyjwt mints <code>sub: 2</code> fine but rejects it on decode.</li>
+        <li>Must use <code>datetime.now(timezone.utc)</code> — a naive local datetime silently makes tokens live hours too long.</li>
+        <li><code>options={"require": ["exp","sub"]}</code> — without it, a token with no <code>exp</code> is immortal.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/security.py</code></h4>
+      <div class="code-wrap"><pre class="code">def create_access_token(user_id: int) -> str:
+    payload = {
+        "sub": str(user_id),                                  <span class="c"># str at the boundary</span>
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_EXPIRE_MINUTES),
+        "type": "access",
+    }
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)</pre></div>
+    </article>
+
+    <article class="concept" id="c08">
+      <div class="concept-head"><span class="concept-num">08</span><span class="concept-title">Bearer Auth &amp; the Dependency Chain</span></div>
+      <span class="concept-tag">Auth Core</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Client</span><span class="seq-actor">bearer_scheme</span><span class="seq-actor">jwt.decode</span><span class="seq-actor">db.get(User)</span></div>
+        <div class="seq-step"><span class="who">Client</span><span class="arr">→</span><span class="who">bearer_scheme</span><span class="msg">Authorization: Bearer eyJ...</span></div>
+        <div class="seq-step"><span class="who">bearer_scheme</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">401 if missing / malformed header</span></div>
+        <div class="seq-step"><span class="who">bearer_scheme</span><span class="arr">→</span><span class="who">jwt.decode</span><span class="msg">raw token</span></div>
+        <div class="seq-step"><span class="who">jwt.decode</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">401 if tampered / expired</span></div>
+        <div class="seq-step"><span class="who">jwt.decode</span><span class="arr">→</span><span class="who">db.get(User)</span><span class="msg">sub → user_id</span></div>
+        <div class="seq-step"><span class="who">db.get(User)</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">401 gone / 403 inactive</span></div>
+        <div class="seq-step"><span class="who">db.get(User)</span><span class="arr">→</span><span class="who">Client</span><span class="msg">verified User → endpoint runs</span></div>
+      </div></div>
+      <p class="refresher">Three guards, each strictly dumber than the next, each unreachable unless the previous passed. <code>HTTPBearer</code> knows only HTTP headers (a bouncer's reflex). <code>jwt.decode</code> knows crypto and claims. The final DB check knows application state. The endpoint inherits all three guarantees as one typed parameter.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><b>401</b> = identity claim failed (any reason, including "user no longer exists" — don't leak which). <b>403</b> = identity established, access denied (inactive).</li>
+        <li><code>Depends()</code> resolves twice in time: once at startup (builds the graph, marks OpenAPI security), once per-request (leaves-first, cached — <code>get_db</code> appearing twice in the tree still runs once).</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/dependencies.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def get_current_user(credentials: BearerCredentials, db: DbSession):
+    payload = decode_token(credentials.credentials)
+    if payload.get("type") != "access":
+        raise HTTPException(401, "Invalid token type")   <span class="c"># refresh token ≠ bearer credential</span>
+    user = await db.get(User, int(payload["sub"]))
+    if not user: raise HTTPException(401)
+    if not user.is_active: raise HTTPException(403, "User account is inactive")
+    return user
+
+CurrentUser = Annotated[User, Depends(get_current_user)]</pre></div>
+    </article>
+
+    <article class="concept" id="c09">
+      <div class="concept-head"><span class="concept-num">09</span><span class="concept-title">Refresh Token Rotation + Reuse Detection</span></div>
+      <span class="concept-tag">Auth Core</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Client</span><span class="seq-actor">Server</span></div>
+        <div class="seq-step"><span class="who">Client</span><span class="arr">→</span><span class="who">Server</span><span class="msg">POST /refresh (old token)</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">↻</span><span class="who">Server</span><span class="msg">mark old token revoked = True</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">NEW refresh + access token</span></div>
+        <div class="seq-note">attacker replays the OLD token later</div>
+        <div class="seq-step"><span class="who">Client</span><span class="arr">→</span><span class="who">Server</span><span class="msg">POST /refresh (old, already-revoked token)</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">401 + REVOKE ALL sessions for this user</span></div>
+      </div></div>
+      <p class="refresher">Every refresh mints a brand-new token and revokes the one just used. A revoked token being presented again is a strong signal of theft — not "expired," <i>stolen and now in two hands</i> — so the response isn't just "deny," it's "kill every session this user has."</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>jti</code> (unique, not secret) identifies the row; a separate CSPRNG-backed value would be needed if the token itself had to be unguessable server-side.</li>
+        <li>Real bugs caught building this: <code>db.add(RefreshSchema(...))</code> instead of the ORM model; a missing <code>payload["type"] == "access"</code> check let refresh tokens work as permanent bearer creds.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/user/controller.py</code></h4>
+      <div class="code-wrap"><pre class="code">if token_row.revoked:
+    <span class="c"># reuse of an already-rotated token — treat as compromise</span>
+    await db.execute(update(RefreshToken).where(RefreshToken.user_id == token_row.user_id).values(revoked=True))
+    await db.commit()
+    raise HTTPException(401, "Refresh token reuse detected — all sessions revoked")
+
+token_row.revoked = True   <span class="c"># rotate: this one is now spent</span>
+await db.commit()
+return await issue_tokens(user, db)</pre></div>
+    </article>
+
+    <article class="concept" id="c10">
+      <div class="concept-head"><span class="concept-num">10</span><span class="concept-title">Ownership Authorization (404 Privacy)</span></div>
+      <span class="concept-tag">Auth Core</span>
+      <div class="diagram-wrap"><div class="flowd tb">
+        <div class="fnode">GET /tasks/7 (user B)</div>
+        <div class="farr"></div>
+        <div class="fnode decision">task exists AND task.user_id == B ?</div>
+        <div class="fbranches">
+          <div class="frow"><span class="fbranch-label">no row at all →</span><div class="fnode">404</div></div>
+          <div class="frow"><span class="fbranch-label">exists, but belongs to A →</span><div class="fnode">404 — SAME response</div></div>
+          <div class="frow"><span class="fbranch-label">exists, belongs to B →</span><div class="fnode">200 + task</div></div>
+        </div>
+      </div></div>
+      <p class="refresher">"Not there" and "not yours" are made indistinguishable on purpose — a real 404 and a privacy-denial 404 look identical to the caller, so probing task IDs can't be used to confirm which ones exist under someone else's account.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Proven with a live two-user adversarial test — identical 404s for "doesn't exist" and "exists but isn't yours."</li>
+        <li>The same pattern generalizes: any resource with an owner column gets this check before any other logic runs.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/controller.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def get_task_or_404(db: AsyncSession, task_id: int, user_id: int):
+    task = await db.get(Task, task_id)
+    if not task or task.user_id != user_id:
+        raise HTTPException(404, f"Task {task_id} not found")   <span class="c"># same 404 either way</span>
+    return task</pre></div>
+    </article>
+
+    <!-- ============ PHASE C ============ -->
+    <div class="phase-heading">Phase C — Web Security</div>
+
+    <article class="concept" id="c11">
+      <div class="concept-head"><span class="concept-num">11</span><span class="concept-title">httpOnly Cookies</span></div>
+      <span class="concept-tag">Web Security</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">Response.set_cookie(...)</div>
+        <div class="farr"></div>
+        <div class="fnode">Browser stores it</div>
+        <div class="farr">auto-attaches on<br>matching requests</div>
+        <div class="fnode">future requests</div>
+      </div>
+      <div class="flowd" style="margin-top:0.5rem;">
+        <div class="fnode">page's own JS</div>
+        <div class="farr" style="color:var(--accent);">✕ httponly=True<br>blocks this read</div>
+        <div class="fnode">Browser</div>
+      </div></div>
+      <p class="refresher">A cookie is data the server asks the browser to store and <b>reattach automatically</b> — nobody re-sends it manually, which is both the point and the risk. The refresh token (a 7-day credential) moved here specifically because <code>httponly=True</code> blocks any JS — yours, a library's, an XSS payload — from reading its value at all. The access token can't get this treatment: client JS must read it to build the <code>Authorization</code> header, so it's contained by short expiry instead.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Four attributes, one job each: <code>httponly</code> (blocks JS reads), <code>secure</code> (HTTPS-only transport), <code>samesite</code> (the CSRF-relevant knob), <code>path</code> (scopes which URLs get it).</li>
+        <li>Real bug caught live: a cookie path scoped to <code>/users/refresh</code> silently never reached the sibling route <code>/users/logout</code> — fixed by picking the narrowest common-ancestor path, <code>/users</code>.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/user/router.py</code></h4>
+      <div class="code-wrap"><pre class="code">response.set_cookie(value=token_payload["refresh_token"], key="refresh_token",
+    httponly=True, secure=settings.COOKIE_SECURE, samesite="lax",
+    path="/users", max_age=settings.JWT_REFRESH_EXPIRE_DAYS*24*60*60)</pre></div>
+    </article>
+
+    <article class="concept" id="c12">
+      <div class="concept-head"><span class="concept-num">12</span><span class="concept-title">CSRF — Double-Submit Cookie</span></div>
+      <span class="concept-tag">Web Security</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Browser (auto)</span><span class="seq-actor">Page JS (manual)</span><span class="seq-actor">Server</span></div>
+        <div class="seq-note">Two INDEPENDENT channels must agree</div>
+        <div class="seq-step"><span class="who">Browser</span><span class="arr">→</span><span class="who">Server</span><span class="msg">Cookie: csrf_token=abc (auto-attached)</span></div>
+        <div class="seq-step"><span class="who">Page JS</span><span class="arr">→</span><span class="who">Server</span><span class="msg">X-CSRF-Token: abc (read via document.cookie, sent manually)</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">↻</span><span class="who">Server</span><span class="msg">cookie value == header value?</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">⇢</span><span class="who">Page JS</span><span class="msg">match → proceed / mismatch → 403</span></div>
+      </div></div>
+      <p class="refresher">The server generates a random token at login and then <b>forgets it</b> — no DB row, no session store. The whole check is one line: does the incoming cookie equal the incoming header, right now. It works because a forged cross-site request can trigger the automatic channel (the cookie) but can't replicate the manual one — evil.com's JS calling <code>document.cookie</code> for a domain it isn't running on gets nothing, by the browser's own same-origin rule.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>secrets.token_urlsafe(32)</code>, not <code>uuid4()</code> — this token's job is being <i>unguessable</i>, not merely unique.</li>
+        <li><code>secrets.compare_digest(None, None)</code> raises <code>TypeError</code>, doesn't return <code>False</code> — the most common real request (no CSRF header yet) would 500 without a short-circuit guard.</li>
+        <li><code>dependencies=[Depends(verify_csrf)]</code> — a <b>bare</b> function in that list crashes the whole app at import time, not just the route.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/dependencies.py</code></h4>
+      <div class="code-wrap"><pre class="code">def verify_csrf(csrf_token: Annotated[str|None, Cookie()] = None,
+                 X_CSRF_Token: Annotated[str|None, Header()] = None):
+    if not csrf_token or not X_CSRF_Token or not secrets.compare_digest(csrf_token, X_CSRF_Token):
+        raise HTTPException(403, "CSRF token missing or invalid")   <span class="c"># short-circuit BEFORE compare_digest</span></pre></div>
+    </article>
+
+    <article class="concept" id="c13">
+      <div class="concept-head"><span class="concept-num">13</span><span class="concept-title">CORS</span></div>
+      <span class="concept-tag">Web Security</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Browser :5500</span><span class="seq-actor">API :8000</span></div>
+        <div class="seq-step"><span class="who">Browser</span><span class="arr">→</span><span class="who">API</span><span class="msg">OPTIONS /users/login (preflight)</span></div>
+        <div class="seq-step"><span class="who">API</span><span class="arr">⇢</span><span class="who">Browser</span><span class="msg">Access-Control-Allow-Origin: :5500</span></div>
+        <div class="seq-note">only now does the REAL request go out</div>
+        <div class="seq-step"><span class="who">Browser</span><span class="arr">→</span><span class="who">API</span><span class="msg">POST /users/login</span></div>
+        <div class="seq-step"><span class="who">API</span><span class="arr">⇢</span><span class="who">Browser</span><span class="msg">401 (JS on the page CAN read this)</span></div>
+      </div></div>
+      <p class="refresher">A <b>browser</b> story, not a server story — curl/Postman/TestClient never see CORS at all. Same-Origin Policy blocks cross-origin JS from <i>reading a response</i> by default; CORS headers are the server opting <b>out</b> of part of that lockout for named origins. Not auth — it decides which pages' JS may read responses, not who may access data.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>allow_origins=["*"]</code> + <code>allow_credentials=True</code> together is rejected outright by browsers — genuinely not an option once real cookies are in play.</li>
+        <li>Multi-middleware ordering rule, verified both directions: <b>last registered = outermost</b>, first to see the request, last to touch the response.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>main.py</code></h4>
+      <div class="code-wrap"><pre class="code">app.add_middleware(CORSMiddleware,
+    allow_origins=["http://localhost:5500"], allow_credentials=True,
+    allow_methods=["*"], allow_headers=["*"])</pre></div>
+    </article>
+
+    <article class="concept" id="c14">
+      <div class="concept-head"><span class="concept-num">14</span><span class="concept-title">Security Headers</span></div>
+      <span class="concept-tag">Web Security</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">any request</div>
+        <div class="farr"></div>
+        <div class="fnode decision">add_security_headers<small>middleware</small></div>
+        <div class="fbranches">
+          <div class="fnode">X-Content-Type-Options: nosniff</div>
+          <div class="fnode">X-Frame-Options: DENY</div>
+          <div class="frow"><span class="fbranch-label">if COOKIE_SECURE →</span><div class="fnode">Strict-Transport-Security</div></div>
+        </div>
+      </div></div>
+      <p class="refresher">Browser-enforced instructions, stamped on <b>every</b> response — textbook "for every request" middleware. <code>nosniff</code> stops a browser guessing a different content type than declared. <code>X-Frame-Options: DENY</code> closes off clickjacking (a real target here: <code>/docs</code>' own "Execute" button, invisibly framed). HSTS closes the SSL-stripping window on a user's very first plaintext request.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>CSP deliberately skipped — this app only returns JSON, no script-execution surface for a content policy to restrict.</li>
+        <li>HSTS gated behind <code>settings.COOKIE_SECURE</code> — sending it on plain <code>localhost</code> dev could make a browser refuse to connect at all for the whole <code>max-age</code> window.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/security_headers.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    if settings.COOKIE_SECURE:
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return response</pre></div>
+    </article>
+
+    <article class="concept" id="c15">
+      <div class="concept-head"><span class="concept-num">15</span><span class="concept-title">HTTPS / TLS</span></div>
+      <span class="concept-tag">Web Security</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Browser</span><span class="seq-actor">Caddy / LB (holds cert)</span><span class="seq-actor">FastAPI app</span></div>
+        <div class="seq-step"><span class="who">Browser</span><span class="arr">→</span><span class="who">Proxy</span><span class="msg">TLS handshake, verifies cert against trusted CA</span></div>
+        <div class="seq-step"><span class="who">Browser</span><span class="arr">→</span><span class="who">Proxy</span><span class="msg">encrypted request</span></div>
+        <div class="seq-step"><span class="who">Proxy</span><span class="arr">→</span><span class="who">App</span><span class="msg">PLAIN http, internal network only</span></div>
+        <div class="seq-step"><span class="who">App</span><span class="arr">⇢</span><span class="who">Proxy</span><span class="msg">plain response</span></div>
+        <div class="seq-step"><span class="who">Proxy</span><span class="arr">⇢</span><span class="who">Browser</span><span class="msg">re-encrypted response</span></div>
+      </div></div>
+      <p class="refresher">HTTPS = HTTP wrapped in an encrypted tunnel — app code never changes. Asymmetric crypto bootstraps a shared symmetric session key once (slow, used briefly); everything after uses fast symmetric encryption. A <b>certificate</b> is a passport analogy: a CA signs "this domain owns this public key" with its own private key; the browser verifies that signature locally against a CA it already trusts. TLS <b>terminates at a reverse proxy</b>, not inside the FastAPI process — the internal hop stays plain HTTP because it never leaves a trusted network boundary.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><b>ACME</b> (Let's Encrypt) proves domain control via a challenge — e.g. serve a specific token at <code>/.well-known/acme-challenge/&lt;token&gt;</code> — then signs automatically, no human review.</li>
+        <li><code>localhost</code> is structurally unreachable from outside — real deployment needs an actually different, internet-routable machine.</li>
+      </ul>
+      <h4 class="subhead">The one app-code change this topic produces</h4>
+      <div class="code-wrap"><pre class="code">secure=settings.COOKIE_SECURE   <span class="c"># False in dev, True once genuinely behind HTTPS — nothing else changes</span></pre></div>
+    </article>
+
+    <!-- ============ PHASE D ============ -->
+    <div class="phase-heading">Phase D — Background Work</div>
+
+    <article class="concept" id="c16">
+      <div class="concept-head"><span class="concept-num">16</span><span class="concept-title">BackgroundTasks</span></div>
+      <span class="concept-tag">Background Work</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">request handled</div>
+        <div class="farr"></div>
+        <div class="fnode">response SENT to client</div>
+        <div class="farr">then, same<br>process</div>
+        <div class="fnode">background_tasks runs</div>
+      </div></div>
+      <p class="refresher">The waiter analogy: bring the food first, update the inventory sheet after. The criterion: <i>background what the response merely triggers; foreground what it asserts.</i> Email on register — the 201 means "account exists," true at commit, the email arriving later changes nothing. Hashing — never; the 201 semantically asserts "credential stored."</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Dies with the process — no retries, no persistence. A restart mid-send = the task silently never existed. Loss-tolerable work only.</li>
+        <li>Anything that outlives the request must open its <b>own</b> DB session — the request's <code>get_db</code> session isn't guaranteed to still be usable.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/router.py</code></h4>
+      <div class="code-wrap"><pre class="code">background_tasks.add_task(log_activity, current_user.id, "task_created", f"task {new_task.id}")
+return new_task   <span class="c"># response goes out; log_activity runs after, in its own session</span></pre></div>
+    </article>
+
+    <article class="concept" id="c17">
+      <div class="concept-head"><span class="concept-num">17</span><span class="concept-title">Redis Task Queue (arq)</span></div>
+      <span class="concept-tag">Background Work</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">App process<small>enqueue_job(...)</small></div>
+        <div class="farr">job durable<br>in Redis</div>
+        <div class="fnode store">Redis</div>
+        <div class="farr">picked up whenever<br>a worker exists</div>
+        <div class="fnode">Worker process<small>separate, own lifecycle</small></div>
+      </div></div>
+      <p class="refresher">Extends BackgroundTasks' own criterion: <i>must-happen, not loss-tolerable → a notebook that survives restarts.</i> A queued job sat in Redis ~9 real minutes, untouched, until a worker started — and was still processed correctly. That's the entire value proposition, proven live, not asserted.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Chosen over Celery: async-native, Redis-only, no new infrastructure concept beyond what the app already uses.</li>
+        <li><code>WorkerSettings.functions = [...]</code> is the same "registered nowhere = doesn't exist" family as <code>include_router</code>.</li>
+        <li>Default retry behavior (traced from source, not assumed): <code>max_tries=5</code>, <code>retry_jobs=True</code> — but only works if the task actually <code>raise</code>s on failure.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/arq_functions.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def send_welcome_email(ctx, email: str):   <span class="c"># ctx always first, arq's convention</span>
+    async with httpx.AsyncClient() as client:
+        response = await client.post("https://api.resend.com/emails", ...)
+        response.raise_for_status()   <span class="c"># without this, a failed send looks "successful" to arq</span>
+
+class WorkerSettings:
+    functions = [send_welcome_email]
+    redis_settings = REDIS_SETTINGS</pre></div>
+    </article>
+
+    <article class="concept" id="c18">
+      <div class="concept-head"><span class="concept-num">18</span><span class="concept-title">Activity Feed (Domain Events)</span></div>
+      <span class="concept-tag">Background Work</span>
+      <div class="diagram-wrap"><div class="fgroup">
+        <div class="flowd">
+          <div class="fnode">request-logging middleware</div>
+          <div class="farr">HTTP vocabulary<br>PATCH /tasks/5 → 200</div>
+          <div class="fnode">stdout / log files</div>
+        </div>
+        <div class="flowd">
+          <div class="fnode">endpoint, post-work</div>
+          <div class="farr">domain vocabulary<br>"task completed"</div>
+          <div class="fnode store">activity_logs table</div>
+        </div>
+      </div></div>
+      <p class="refresher"><b>Two different kinds of "logging," decided by audience.</b> Middleware records what happened to the <i>request</i> — HTTP facts, for operators, zero endpoint knowledge needed. The activity feed records what happened to the <i>domain</i> — "completed a task," for the user, a product feature — knowledge middleware structurally can't have, since from <code>PATCH /tasks/5 → 200</code> alone it can't tell completed-vs-renamed.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Sat write-only for most of the project's life — <code>GET /activity</code> to read it back came much later, closing a real, previously-flagged gap.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/activity.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def log_activity(user_id: int, action: str, detail: str | None = None):
+    async with LocalSession() as session:   <span class="c"># own session — outlives the request</span>
+        session.add(ActivityLog(user_id=user_id, action=action, detail=detail))
+        await session.commit()</pre></div>
+    </article>
+
+    <!-- ============ PHASE E ============ -->
+    <div class="phase-heading">Phase E — Data &amp; Performance</div>
+
+    <article class="concept" id="c19">
+      <div class="concept-head"><span class="concept-num">19</span><span class="concept-title">Alembic Migrations</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">models imported<small>into Base.metadata</small></div>
+        <div class="farr"></div>
+        <div class="fnode">alembic revision<small>--autogenerate</small></div>
+        <div class="farr"></div>
+        <div class="fnode">versioned .py file<small>upgrade() / downgrade()</small></div>
+        <div class="farr"></div>
+        <div class="fnode store">real schema</div>
+      </div></div>
+      <p class="refresher"><code>create_all</code> only creates <i>missing</i> tables, never alters existing ones — real apps need git-commit-style, versioned, reversible schema history. Autogenerate only sees models that are actually imported into the process running it — <code>migrations/env.py</code> has to import every model module explicitly, or new tables go undetected silently, no error.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Migrations should build seed data with lightweight <code>sa.table()</code>/<code>sa.column()</code> stand-ins, never the live ORM class — history must stay replayable after models change or get deleted.</li>
+        <li>Real drift caught live: two pre-<code>UTCDateTime</code> migrations stored naive datetimes as <code>timestamp without time zone</code> on Postgres, invisible the whole time on SQLite.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>migrations/env.py</code></h4>
+      <div class="code-wrap"><pre class="code">from src.user.models import User
+from src.task.models import Task
+from src.authz.models import Role, Permission   <span class="c"># must import, or autogenerate sees nothing new</span>
+target_metadata = Base.metadata</pre></div>
+    </article>
+
+    <article class="concept" id="c20">
+      <div class="concept-head"><span class="concept-num">20</span><span class="concept-title">Async SQLAlchemy</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">def route<small>dispatched to worker thread</small></div>
+        <div class="farr">converted</div>
+        <div class="fnode decision">async def route<small>real await, no thread</small></div>
+        <div class="farr"></div>
+        <div class="fnode">asyncpg — real non-blocking I/O</div>
+      </div></div>
+      <p class="refresher">Once one function in the chain is <code>async</code>, every caller up the stack has to <code>await</code> it — "async is contagious." The reward: one process serves many requests concurrently by yielding the CPU during any real wait, instead of dedicating a thread per in-flight request.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>A genuine authbypass caught by the test suite mid-conversion: a threadpool-wrapped <code>verify_password</code> call missing its <code>await</code> — an un-awaited coroutine is always truthy, so the password check silently stopped doing anything at all.</li>
+        <li><code>expire_on_commit=False</code> is the standard async pattern — without it, reading an attribute right after commit becomes a silent, impossible-in-async lazy reload.</li>
+      </ul>
+      <h4 class="subhead">Code — the bug, exactly as it shipped and got caught</h4>
+      <div class="code-wrap"><pre class="code"><span class="c"># before — always True, any password "worked":</span>
+if not run_in_threadpool(verify_password, body.password, user.hashed_password):
+<span class="c"># after — test_login_wrong_password_returns_401 is what caught the missing await:</span>
+if not await run_in_threadpool(verify_password, body.password, user.hashed_password):</pre></div>
+    </article>
+
+    <article class="concept" id="c21">
+      <div class="concept-head"><span class="concept-num">21</span><span class="concept-title">Cascade Deletes (<code>passive_deletes</code>)</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="flowd tb">
+        <div class="fnode">db.delete(user)</div>
+        <div class="farr"></div>
+        <div class="fnode decision">passive_deletes=True ?</div>
+        <div class="fbranches">
+          <div class="fgroup">
+            <div class="frow"><span class="fbranch-label">No (default) →</span><div class="fnode">SQLAlchemy tries<br>UPDATE tasks SET user_id=NULL</div></div>
+            <div class="frow" style="margin-left:1.5rem;"><span class="farr" style="margin:0;"></span><div class="fnode" style="border-color:var(--accent);">Postgres rejects — NOT NULL violation</div></div>
+          </div>
+          <div class="fgroup">
+            <div class="frow"><span class="fbranch-label">Yes →</span><div class="fnode">just DELETE FROM users</div></div>
+            <div class="frow" style="margin-left:1.5rem;"><span class="farr" style="margin:0;"></span><div class="fnode">Postgres ON DELETE CASCADE<br>cleans up children</div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="refresher"><b>Two independent layers.</b> <code>ondelete="CASCADE"</code> is a real Postgres constraint — enforced no matter what deletes the row, even raw SQL. <code>passive_deletes=True</code> is purely SQLAlchemy-side — it stops the ORM from trying to manage the cascade itself first. Verified live, both directions: without it, deleting a user genuinely <b>crashes</b>, not just runs an extra query.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>The failure mode without it: SQLAlchemy defaults to nulling out each child's FK before the parent delete — rejected outright since <code>user_id</code> isn't nullable.</li>
+        <li>A raw <code>DELETE FROM users WHERE id=5;</code> typed into <code>psql</code> would cascade correctly with or without this setting — it only governs SQLAlchemy's own Python-side behavior.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/user/models.py</code></h4>
+      <div class="code-wrap"><pre class="code">tasks: Mapped[list["Task"]] = relationship(back_populates="owner", passive_deletes=True)</pre></div>
+    </article>
+
+    <article class="concept" id="c22">
+      <div class="concept-head"><span class="concept-num">22</span><span class="concept-title">N+1 Queries &amp; Eager Loading</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="fgroup">
+        <div class="flowd">
+          <div class="fnode" style="border-color:var(--accent);">for user in users: user.roles</div>
+          <div class="farr"></div>
+          <div class="fnode">1 query for users</div>
+          <div class="farr"></div>
+          <div class="fnode">+ 1 query PER user for roles</div>
+        </div>
+        <div class="flowd">
+          <div class="fnode decision">selectinload(User.roles)</div>
+          <div class="farr"></div>
+          <div class="fnode">1 query for users</div>
+          <div class="farr"></div>
+          <div class="fnode">+ 1 query for ALL roles, batched (IN ...)</div>
+        </div>
+      </div></div>
+      <p class="refresher">Lazy loading is attribute access that secretly does I/O — fine in sync code, structurally impossible to do silently in async code (SQLAlchemy crashes with <code>MissingGreenlet</code> rather than freeze the whole event loop). N+1 is what happens when that lazy fetch is triggered once <i>per parent, inside a loop</i>, instead of once, batched, before the loop.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>selectinload</code>: 2 queries total, regardless of N — right default for to-many relationships.</li>
+        <li><code>joinedload</code>: 1 query via SQL JOIN, but duplicates parent columns once per child on to-many — better suited to to-one.</li>
+        <li>Full audit of this app found <b>zero</b> active N+1 bugs — every response DTO stays deliberately flat, never serializes a nested relationship.</li>
+      </ul>
+      <h4 class="subhead">Code — the exact live bug this app hit</h4>
+      <div class="code-wrap"><pre class="code"><span class="c"># crashed: MissingGreenlet — user already persisted, roles not loaded</span>
+user = (await db.scalars(select(User).where(User.email == email))).first()
+user.roles.append(admin_role)
+
+<span class="c"># fixed:</span>
+user = (await db.scalars(select(User).where(User.email == email)
+        .options(selectinload(User.roles)))).first()
+user.roles.append(admin_role)</pre></div>
+    </article>
+
+    <article class="concept" id="c23">
+      <div class="concept-head"><span class="concept-num">23</span><span class="concept-title">Redis Cache-Aside</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">App</span><span class="seq-actor">Redis</span><span class="seq-actor">Postgres</span></div>
+        <div class="seq-step"><span class="who">App</span><span class="arr">→</span><span class="who">Redis</span><span class="msg">GET tasks:{user_id}</span></div>
+        <div class="seq-alt">
+          <div class="seq-alt-label">alt — cache hit</div>
+          <div class="seq-step"><span class="who">Redis</span><span class="arr">⇢</span><span class="who">App</span><span class="msg">cached JSON</span></div>
+          <div class="seq-alt-label">else — cache miss</div>
+          <div class="seq-step"><span class="who">App</span><span class="arr">→</span><span class="who">Postgres</span><span class="msg">SELECT * FROM user_tasks</span></div>
+          <div class="seq-step"><span class="who">App</span><span class="arr">→</span><span class="who">Redis</span><span class="msg">SET tasks:{user_id} ... EX 60</span></div>
+        </div>
+        <div class="seq-note">any write → DELETE tasks:{user_id}</div>
+      </div></div>
+      <p class="refresher">Read path: check cache, fall through to DB on miss, write back with a TTL. Write path: invalidate (delete) the key after the DB commit succeeds. Every Redis call wrapped in a resilience guard — a cache outage degrades to "always hit the DB," never fails the request outright.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Real bug caught live: caching a raw Python list instead of <code>json.dumps()</code>-ing it first — broke every cache miss with a <code>DataError</code>.</li>
+        <li>Deliberately scoped to the list endpoint only, not single-item fetches — those are already a fast PK lookup, caching them doubles the invalidation surface for little gain.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/controller.py</code></h4>
+      <div class="code-wrap"><pre class="code">try:
+    cached_value = await redis_pool.get(key)
+    if cached_value: tasks = json.loads(cached_value)
+except (redis.exceptions.RedisError, json.JSONDecodeError):
+    pass   <span class="c"># Redis down or malformed — treat exactly like a normal miss</span></pre></div>
+    </article>
+
+    <article class="concept" id="c24">
+      <div class="concept-head"><span class="concept-num">24</span><span class="concept-title">Pagination &amp; Filtering</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">fetch/cache FULL list<small>one key, unchanged</small></div>
+        <div class="farr"></div>
+        <div class="fnode">filter in-memory<small>is_completed / search</small></div>
+        <div class="farr"></div>
+        <div class="fnode">slice [start:end]<small>+ has_next via fetch-one-extra</small></div>
+      </div></div>
+      <p class="refresher">A per-page cache key was seriously considered and rejected — it reopens the exact problem it solves (which of an unknown set of page-keys needs invalidating on write?). Given a personal task list is realistically small, the whole list stays cached under one key; pagination and filtering are just in-memory views over it, so the 4 existing write-invalidation paths need zero changes.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>has_next</code> via fetching <code>page_size + 1</code> rows and checking if the extra one showed up — avoids a separate <code>COUNT</code> query entirely.</li>
+        <li>The response-shape ambiguity this solves: a bare list of exactly <code>page_size</code> items can't tell the client "more exists" from "exactly enough to fill this page."</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/task/controller.py</code></h4>
+      <div class="code-wrap"><pre class="code">start = (page - 1) * page_size
+end = start + page_size
+return {"items": filtered[start:end], "has_next": end < len(filtered)}</pre></div>
+    </article>
+
+    <article class="concept" id="c25">
+      <div class="concept-head"><span class="concept-num">25</span><span class="concept-title">Rate Limiting</span></div>
+      <span class="concept-tag">Data &amp; Performance</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">request from IP/email</div>
+        <div class="farr"></div>
+        <div class="fnode">SET key 0 EX 60 NX</div>
+        <div class="farr"></div>
+        <div class="fnode decision">INCR key</div>
+        <div class="fbranches">
+          <div class="frow"><span class="fbranch-label">&gt; limit →</span><div class="fnode">429</div></div>
+          <div class="frow"><span class="fbranch-label">&le; limit →</span><div class="fnode">continue</div></div>
+        </div>
+      </div></div>
+      <p class="refresher">Fixed-window counter — match the tool's weight to the requirement's, no need for token-bucket sophistication just to stop brute-forcing a login form. <code>SET...NX EX</code> before <code>INCR</code> closes a real race: a naive <code>INCR</code>-then-<code>EXPIRE</code> sequence could leave a permanently un-expiring key if the process crashed between the two calls.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Built as a parameterized factory — one implementation protects <code>/login</code> and <code>/register</code> with independent counters via different bucket names.</li>
+        <li>Test isolation gotcha caught live: <code>TestClient</code>'s shared synthetic host meant rate-limit state accumulated <i>across</i> unrelated tests until conftest flushed Redis per test.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/dependencies.py</code></h4>
+      <div class="code-wrap"><pre class="code">def rate_limit_ip(bucket: str, ex: int = 60, limit: int = 5):
+    async def _rate_limit_ip(request: Request):
+        redis_pool: ArqRedis = request.app.state.redis_pool
+        key = f"{bucket}:{request.client.host}"
+        await check_rate_limit(redis_pool, key, ex, limit)
+    return _rate_limit_ip   <span class="c"># dependencies=[Depends(rate_limit_ip("register_attempts"))]</span></pre></div>
+    </article>
+
+    <!-- ============ PHASE F ============ -->
+    <div class="phase-heading">Phase F — Realtime &amp; RBAC</div>
+
+    <article class="concept" id="c26">
+      <div class="concept-head"><span class="concept-num">26</span><span class="concept-title">Server-Sent Events + Redis Pub/Sub</span></div>
+      <span class="concept-tag">Realtime</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">App instance A<small>handles the PATCH</small></div>
+        <div class="farr">PUBLISH<br>user:42:events</div>
+        <div class="fnode store">Redis</div>
+        <div class="farr">delivered<br>instantly</div>
+        <div class="fnode">App instance B<small>holds the SSE connection</small></div>
+        <div class="farr">data: {...}</div>
+        <div class="fnode">laptop tab, live</div>
+      </div></div>
+      <p class="refresher">Solves the actual multi-instance problem: an in-memory dict of open connections works at one replica and breaks the instant there's more than one. Pub/Sub is data <b>in motion</b> — no key, no persistence; a message with nobody subscribed is simply gone, treated as a hint to refetch, not a guaranteed delivery channel (Postgres stays the source of truth).</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Chose SSE over WebSockets on merit: traffic here is one-directional (mutations go through normal REST), and SSE is plain HTTP with native browser reconnect — no protocol upgrade needed.</li>
+        <li><code>pubsub.listen()</code>'s first item is always the subscribe confirmation, not real data — must filter for <code>type == "message"</code>.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/realtime/router.py</code></h4>
+      <div class="code-wrap"><pre class="code">async for message in pubsub.listen():
+    if message["type"] != "message": continue
+    payload = message["data"].decode()   <span class="c"># raw bytes — f-string alone gives "b'...'"</span>
+    yield f"data: {payload}\n\n"          <span class="c"># SSE wire format — two trailing \n required</span></pre></div>
+    </article>
+
+    <article class="concept" id="c27">
+      <div class="concept-head"><span class="concept-num">27</span><span class="concept-title">Ticket-Based Realtime Auth</span></div>
+      <span class="concept-tag">Realtime</span>
+      <div class="diagram-wrap"><div class="seqd">
+        <div class="seq-actors"><span class="seq-actor">Client</span><span class="seq-actor">Server</span></div>
+        <div class="seq-step"><span class="who">Client</span><span class="arr">→</span><span class="who">Server</span><span class="msg">POST /realtime/ (real Bearer token, normal fetch)</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">↻</span><span class="who">Server</span><span class="msg">SET sse_ticket:{t} = user_id EX 30 NX</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">⇢</span><span class="who">Client</span><span class="msg">{"ticket": t} in JSON body</span></div>
+        <div class="seq-step"><span class="who">Client</span><span class="arr">→</span><span class="who">Server</span><span class="msg">new EventSource("/events?ticket=t")</span></div>
+        <div class="seq-step"><span class="who">Server</span><span class="arr">↻</span><span class="who">Server</span><span class="msg">GETDEL sse_ticket:{t} — atomic, single-use</span></div>
+      </div></div>
+      <p class="refresher"><code>EventSource</code> can't set an <code>Authorization</code> header, so the real access token can't ride along — and putting it in a URL means access logs, browser history, <code>Referer</code> leaks. The fix: mint a deliberately weak, 30-second, single-use ticket using the real token over a normal <code>fetch</code> first — a coat-check tag, not your ID.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li><code>GETDEL</code> — atomic read-and-delete in one step, so a ticket can never be redeemed twice even under concurrent requests.</li>
+        <li>Short TTL <b>and</b> single-use together, not either alone — the ticket is only ever dangerous for the few seconds between minting and redemption.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/realtime/router.py</code></h4>
+      <div class="code-wrap"><pre class="code">user_id = await redis_pool.getdel(f"sse_ticket:{ticket}")
+if user_id is None:
+    raise HTTPException(401, "Invalid or expired ticket")</pre></div>
+    </article>
+
+    <article class="concept" id="c28">
+      <div class="concept-head"><span class="concept-num">28</span><span class="concept-title">RBAC (Roles &amp; Permissions)</span></div>
+      <span class="concept-tag">Authorization</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">User</div>
+        <div class="farr">user_roles</div>
+        <div class="fnode">Role<small>admin</small></div>
+        <div class="farr">role_permissions</div>
+        <div class="fnode">Permission<small>view_admin_dashboard</small></div>
+      </div>
+      <div class="flowd" style="margin-top:0.5rem;">
+        <div class="fnode decision">require_permission(name)</div>
+        <div class="farr" style="color:var(--accent);">one direct JOIN,<br>not an ORM walk</div>
+        <div class="fnode">Permission</div>
+      </div></div>
+      <p class="refresher">Routes check <b>permissions</b>, never role names directly — the indirection is what lets a new role recombine existing permissions without touching every enforcement point. Built with exactly one real permission (<code>view_admin_dashboard</code>), not several pre-invented ones with nothing to enforce yet — the general schema is what future-proofs this, not extra rows nobody checks.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>The permission check is a direct 4-table join, deliberately not <code>current_user.roles</code> as an ORM relationship — sidesteps the async lazy-load problem by construction.</li>
+        <li>Every user gets <code>member</code> automatically at registration; <code>admin</code> is never self-assignable through the API.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/dependencies.py</code></h4>
+      <div class="code-wrap"><pre class="code">def require_permission(permission_name: str):
+    async def _require_permission(current_user: CurrentUser, db: DbSession):
+        stmt = (select(Permission.id)
+            .join(role_permissions, Permission.id == role_permissions.c.permission_id)
+            .join(Role, Role.id == role_permissions.c.role_id)
+            .join(user_roles, Role.id == user_roles.c.role_id)
+            .where(user_roles.c.user_id == current_user.id, Permission.name == permission_name))
+        if (await db.execute(stmt)).first() is None:
+            raise HTTPException(403, "Insufficient permissions")
+    return _require_permission</pre></div>
+    </article>
+
+    <!-- ============ PHASE G ============ -->
+    <div class="phase-heading">Phase G — Infrastructure</div>
+
+    <article class="concept" id="c29">
+      <div class="concept-head"><span class="concept-num">29</span><span class="concept-title">Middleware</span></div>
+      <span class="concept-tag">Infrastructure</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">add_security_headers<small>outermost — last registered</small></div>
+        <div class="farr"></div>
+        <div class="fnode">log_requests</div>
+        <div class="farr"></div>
+        <div class="fnode">CORSMiddleware</div>
+        <div class="farr"></div>
+        <div class="fnode">routing → deps → endpoint</div>
+      </div></div>
+      <p class="refresher">The "for every request" trigger — cross-cutting infrastructure, not a per-route opt-in. <code>call_next</code> isn't "the next single step" — calling it runs <b>everything downstream</b>, all the way to the endpoint and back, handing back the fully-built response for your own "after" code to still modify before passing it further out.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Last registered = outermost, first to see the request, last to touch the response — verified both directions, not assumed.</li>
+        <li><code>contextvars.ContextVar</code> makes the request-id readable anywhere in the call stack without threading it through every function signature — a plain global would leak across concurrent requests on the event loop.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>src/utils/logging.py</code></h4>
+      <div class="code-wrap"><pre class="code">async def log_requests(request: Request, call_next):
+    request_id_var.set(str(uuid.uuid4()))   <span class="c"># fresh per request, NOT module-level</span>
+    response = await call_next(request)      <span class="c"># runs the entire rest of the app</span>
+    logger.info(f"{request.method} {request.url.path} -> {response.status_code}")
+    return response</pre></div>
+    </article>
+
+    <article class="concept" id="c30">
+      <div class="concept-head"><span class="concept-num">30</span><span class="concept-title">Docker &amp; Docker Compose</span></div>
+      <span class="concept-tag">Infrastructure</span>
+      <div class="diagram-wrap"><div class="flowd tb">
+        <div class="fnode decision">one built image<small>taskmanager-app</small></div>
+        <div class="fbranches">
+          <div class="fnode">app service<small>cmd: uvicorn</small></div>
+          <div class="fnode">worker service<small>cmd: arq WorkerSettings</small></div>
+        </div>
+        <div class="frow" style="margin-top:0.4rem;"><span class="fbranch-label">app service ···· depends_on: healthy ····&gt;</span></div>
+        <div class="fgroup"><div class="fnode store">postgres</div><div class="fnode store">redis</div></div>
+      </div></div>
+      <p class="refresher">One image, two services differing only in startup command — same code, no separate build step for the worker. <code>0.0.0.0</code> not <code>127.0.0.1</code>: the default binds only to loopback inside the container, unreachable through Docker's own port mapping — proven live by running standalone with a stale <code>localhost</code>-based config and watching it fail exactly as predicted.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Layer-cache ordering: <code>requirements.txt</code> copied and installed <i>before</i> the rest of the source, so the slow step only reruns when dependencies actually change.</li>
+        <li>Non-root runtime user — root during build is fine (disposable environment); root handling real traffic is the actual risk.</li>
+        <li><code>python:3.13-slim</code> over alpine — native C-extension deps (<code>asyncpg</code>, <code>argon2-cffi</code>) lack alpine wheels.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>Dockerfile</code></h4>
+      <div class="code-wrap"><pre class="code">COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt   <span class="c"># cached unless requirements.txt changes</span>
+COPY . .
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
+USER appuser   <span class="c"># root only during the build, never at runtime</span>
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</pre></div>
+    </article>
+
+    <article class="concept" id="c31">
+      <div class="concept-head"><span class="concept-num">31</span><span class="concept-title">CI (GitHub Actions)</span></div>
+      <span class="concept-tag">Infrastructure</span>
+      <div class="diagram-wrap"><div class="flowd">
+        <div class="fnode">push / PR to main</div>
+        <div class="farr"></div>
+        <div class="fnode">GitHub Actions job</div>
+        <div class="farr"></div>
+        <div class="fnode">service containers<small>fresh Postgres + Redis</small></div>
+        <div class="farr"></div>
+        <div class="fnode">full pytest suite</div>
+      </div></div>
+      <p class="refresher">Service containers spin up a genuinely fresh Postgres and Redis per job — same shape as local <code>docker-compose.yml</code>, GitHub-orchestrated instead of local. First real run failed for a good first lesson: env vars were scoped only to the test step, not the migration step (which also imports settings) — fixed by moving shared vars to job-level scope.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>A properly-sized (32-byte) placeholder JWT secret in CI silenced a legitimate <code>InsecureKeyLengthWarning</code> — not suppressed, actually fixed.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>.github/workflows/tests.yml</code></h4>
+      <div class="code-wrap"><pre class="code">jobs:
+  test:
+    env:               <span class="c"># job-level, not step-level — migrations need these too</span>
+      DB_CONNECTION: postgresql://...@localhost:5432/taskmanager_test
+    services:
+      postgres: { image: postgres:16, options: --health-cmd pg_isready }
+      redis: { image: redis:7 }</pre></div>
+    </article>
+
+    <article class="concept" id="c32">
+      <div class="concept-head"><span class="concept-num">32</span><span class="concept-title">Test Isolation</span></div>
+      <span class="concept-tag">Infrastructure</span>
+      <div class="diagram-wrap"><div class="fgroup">
+        <div class="flowd">
+          <div class="fnode">conftest.py</div>
+          <div class="farr">override BEFORE<br>app import</div>
+          <div class="fnode">DB_CONNECTION → taskmanager_test<br>REDIS_URL → db 15</div>
+        </div>
+        <div class="flowd">
+          <div class="fnode decision">client fixture</div>
+          <div class="fbranches">
+            <div class="frow"><span class="fbranch-label">per test →</span><div class="fnode">redis_pool.flushdb()</div></div>
+            <div class="frow"><span class="fbranch-label">teardown →</span><div class="fnode">engine.dispose() via c.portal.call()</div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="refresher">Env overrides must happen <b>before</b> the app is imported — <code>Settings()</code> and <code>engine</code> are import-time singletons, too late to redirect afterward. <code>TestClient</code> spins up a fresh event loop per test; the module-level <code>engine</code> stays bound to whichever loop touched it first, so cross-test <code>engine.dispose()</code> has to run through that specific test's own portal, not a bare async call.</p>
+      <h4 class="subhead">Details</h4>
+      <ul class="details">
+        <li>Redis gets the exact same treatment Postgres already had — a separate logical DB (index 15), flushed before every single test, so rate-limit counters and cache entries never leak across unrelated tests.</li>
+        <li>A real bug this isolation caught: the whole suite failing only when run <i>together</i>, never in isolation — traced to exactly this event-loop binding, not a flaky test.</li>
+      </ul>
+      <h4 class="subhead">Code — <code>conftest.py</code></h4>
+      <div class="code-wrap"><pre class="code">os.environ["DB_CONNECTION"] = f"postgresql://...@localhost:5432/taskmanager_test"   <span class="c"># before app import</span>
+os.environ["REDIS_URL"] = "redis://localhost:6379/15"
+
+@pytest.fixture
+def client():
+    with TestClient(app) as c:
+        c.portal.call(app.state.redis_pool.flushdb)   <span class="c"># clean slate every test</span>
+        yield c
+        c.portal.call(engine.dispose)                  <span class="c"># same portal, still-alive loop</span></pre></div>
+    </article>
+
+    <footer class="end">
+      Personal reference, built alongside the TaskManager API — FastAPI · SQLAlchemy 2.0 · PostgreSQL · Redis · Docker.
+    </footer>
+  </main>
+</div>
