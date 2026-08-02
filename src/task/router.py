@@ -1,6 +1,6 @@
-from fastapi import APIRouter, status, Request
+from fastapi import APIRouter, status, Request, Query
 from src.task import controller
-from src.task.dtos import TaskSchema, TaskUpdateSchema,TaskResponseSchema
+from src.task.dtos import TaskSchema, TaskUpdateSchema,TaskResponseSchema,TaskListResponseSchema
 from fastapi import BackgroundTasks                      # ← with your other fastapi imports
 from src.utils.activity import log_activity
 from src.utils.dependencies import DbSession,CurrentUser
@@ -17,10 +17,11 @@ async def create_task(body: TaskSchema, background_tasks: BackgroundTasks,
     return new_task
 
 
-@router.get("",response_model=list[TaskResponseSchema],responses={404:{"description":"Task not found"}},status_code=status.HTTP_200_OK)
-async def get_all_tasks(request:Request,db:DbSession,current_user:CurrentUser):
+@router.get("",response_model=TaskListResponseSchema,responses={404:{"description":"Task not found"}},status_code=status.HTTP_200_OK)
+async def get_all_tasks(request:Request,db:DbSession,current_user:CurrentUser,
+                page:int = Query(1,ge=1),page_size:int = Query(20,ge=1,le=100)):
     redis_pool = request.app.state.redis_pool
-    return await controller.get_tasks(db,current_user.id,redis_pool)
+    return await controller.get_tasks(db,current_user.id,redis_pool,page,page_size)
 
 @router.get("/{task_id}",response_model=TaskResponseSchema,responses={404:{"description":"Task not found"}},status_code=status.HTTP_200_OK)
 async def get_task(task_id:int,db:DbSession,current_user:CurrentUser):

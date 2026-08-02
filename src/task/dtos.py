@@ -23,3 +23,7 @@ class TaskResponseSchema(BaseModel):
     description : str | None
     is_completed : bool
     created_at : datetime
+
+class TaskListResponseSchema(BaseModel):
+    items : list[TaskResponseSchema]
+    has_next : bool

@@ -19,7 +19,8 @@ def test_task_crud_lifecycle(client):
 
     r = client.get("/tasks", headers=auth)
     assert r.status_code == 200
-    assert len(r.json()) == 1
+    assert len(r.json()["items"]) == 1
+    assert r.json()["has_next"] is False
 
     r = client.patch(f"/tasks/{task_id}", json={"is_completed": True}, headers=auth)
     assert r.status_code == 200
@@ -37,6 +38,43 @@ def test_task_routes_require_auth(client):
     assert r.status_code == 401
 
 
+def test_task_pagination(client):
+    auth = _register_and_get_auth_header(client)
+    for i in range(3):
+        r = client.post("/tasks", json={"title": f"task {i}"}, headers=auth)
+        assert r.status_code == 201
+
+    r = client.get("/tasks?page=1&page_size=2", headers=auth)
+    body = r.json()
+    assert len(body["items"]) == 2
+    assert body["has_next"] is True
+
+    r = client.get("/tasks?page=2&page_size=2", headers=auth)
+    body = r.json()
+    assert len(body["items"]) == 1
+    assert body["has_next"] is False
+
+
+def test_cache_stats_endpoint(client):
+    auth = _register_and_get_auth_header(client)
+    client.post("/tasks", json={"title": "cache test task"}, headers=auth)
+
+    client.get("/tasks", headers=auth)  # cache miss — populates the cache
+    client.get("/tasks", headers=auth)  # cache hit
+
+    r = client.get("/metrics/cache", headers=auth)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["misses"] >= 1
+    assert body["hits"] >= 1
+    assert body["hit_rate"] is not None
+
+
+def test_cache_stats_requires_auth(client):
+    r = client.get("/metrics/cache")
+    assert r.status_code == 401
+
+
 def test_user_cannot_see_another_users_task(client):
     auth_a = _register_and_get_auth_header(client)
     auth_b = _register_and_get_auth_header(client)
@@ -49,4 +87,4 @@ def test_user_cannot_see_another_users_task(client):
     assert r.status_code == 404
 
     r = client.get("/tasks", headers=auth_b)
-    assert r.json() == []
+    assert r.json() == {"items": [], "has_next": False}
