@@ -59,3 +59,13 @@ def test_get_me_returns_current_user(client):
 def test_get_me_requires_auth(client):
     r = client.get("/users/me")
     assert r.status_code == 401
+
+
+def test_security_headers_present_on_every_response(client):
+    r = client.post("/users/register", json=_unique_user())
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert r.headers["X-Frame-Options"] == "DENY"
+    # COOKIE_SECURE defaults False in tests (plain http) — HSTS must NOT
+    # be sent here, exactly the scenario the settings.COOKIE_SECURE guard
+    # exists to prevent.
+    assert "Strict-Transport-Security" not in r.headers

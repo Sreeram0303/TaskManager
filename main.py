@@ -9,6 +9,7 @@ from src.activity.router import router as activity_router
 from src.admin.router import router as admin_router
 from contextlib import asynccontextmanager
 from src.utils.logging import log_requests
+from src.utils.security_headers import add_security_headers
 from fastapi.middleware.cors import CORSMiddleware
 from src.utils.arq_functions import REDIS_SETTINGS
 from arq.connections import create_pool
@@ -31,6 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.middleware("http")(log_requests)
+app.middleware("http")(add_security_headers)
 app.include_router(task_router)
 app.include_router(user_router)
 app.include_router(realtime_router)
