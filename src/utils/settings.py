@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT_ATTEMPTS: int = 5
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = 900 # (15 min)
 
+    # False in local dev (plain http://localhost) — set True once actually
+    # deployed behind real HTTPS, or the browser will silently refuse to
+    # ever send these cookies back.
+    COOKIE_SECURE: bool = False
+
     
     
 settings = Settings()
